@@ -8,13 +8,13 @@ import {
   Sparkles,
   AlertCircle,
   TrendingUp,
-  FolderTree,
   CheckCircle2,
   CalendarDays,
   MapPin,
-  Calendar
+  Calendar,
+  StickyNote
 } from 'lucide-react';
-import { Course, Task, Goal, ErrorReport, ActiveTab, TimetableEntry } from '../../types';
+import { Course, Task, Goal, ErrorReport, ActiveTab, TimetableEntry, Note } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { FALLBACK_TIMETABLE } from '../../data/fallbackData';
 
@@ -22,7 +22,8 @@ interface DashboardViewProps {
   courses: Course[];
   tasks: Task[];
   goals: Goal[];
-  errors: ErrorReport[];
+  errors?: ErrorReport[];
+  notes?: Note[];
   onNavigate: (tab: ActiveTab) => void;
   onToggleTask: (id: string, currentStatus: Task['status']) => void;
 }
@@ -31,7 +32,8 @@ export function DashboardView({
   courses,
   tasks,
   goals,
-  errors,
+  errors = [],
+  notes = [],
   onNavigate,
   onToggleTask
 }: DashboardViewProps) {
@@ -119,17 +121,6 @@ export function DashboardView({
             <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
             <span>Hỏi Trợ Lý AI</span>
           </button>
-          <button
-            onClick={() => onNavigate('structure')}
-            className={`px-3.5 py-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
-              isDark
-                ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-300'
-                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-600 shadow-2xs'
-            }`}
-          >
-            <FolderTree className="w-3.5 h-3.5 text-slate-400" />
-            <span>Xem Cấu Trúc Dự Án</span>
-          </button>
         </div>
       </div>
 
@@ -203,7 +194,7 @@ export function DashboardView({
         </div>
 
         <div 
-          onClick={() => onNavigate('errors')}
+          onClick={() => onNavigate('notes')}
           className={`p-4 rounded-xl border cursor-pointer transition-all hover:-translate-y-0.5 ${
             isDark
               ? 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700'
@@ -212,15 +203,15 @@ export function DashboardView({
         >
           <div className="flex items-center justify-between mb-2">
             <span className={`text-xs font-medium ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-              Sự Cố & Báo Lỗi
+              Ghi Chú
             </span>
-            <AlertCircle className="w-4 h-4 text-rose-500" />
+            <StickyNote className="w-4 h-4 text-amber-500" />
           </div>
           <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-            {openErrors.length}
+            {notes.length}
           </div>
           <div className={`text-[11px] mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-            {openErrors.length === 0 ? 'Tất cả đã xử lý' : `${openErrors.length} mục đang xử lý`}
+            {notes.length === 0 ? 'Chưa có ghi chú' : `${notes.length} ghi chú đã lưu`}
           </div>
         </div>
       </div>
@@ -407,9 +398,9 @@ export function DashboardView({
                           <span>{item.time}</span>
                         </span>
                         {item.room && (
-                          <span className="flex items-center gap-1 font-medium truncate">
-                            <MapPin className="w-3 h-3 text-emerald-500" />
-                            <span className="truncate">{item.room}</span>
+                          <span className="flex items-center gap-1 font-semibold truncate text-indigo-600 dark:text-indigo-400">
+                            <MapPin className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{item.room.replace(/^(phòng|phong)\s*:?\s*/i, '')}</span>
                           </span>
                         )}
                       </div>
@@ -504,19 +495,6 @@ export function DashboardView({
             >
               Trò chuyện cùng Planora AI →
             </button>
-          </div>
-
-          {/* Architecture info */}
-          <div className={`p-4 rounded-xl border text-xs space-y-1 ${
-            isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-400' : 'bg-slate-50 border-slate-200 text-slate-600'
-          }`}>
-            <div className={`font-semibold ${isDark ? 'text-neutral-300' : 'text-slate-800'}`}>
-              Kiến Trúc Hệ Thống:
-            </div>
-            <div>• Giao diện: React 19 + Tailwind CSS + Roboto Font</div>
-            <div>• Máy chủ: Node.js Express 5 + REST API</div>
-            <div>• Cơ sở dữ liệu: MongoDB Mongoose + In-Memory Fallback</div>
-            <div>• Xác thực: Phân quyền Quản Trị Viên (Admin) & Học Viên</div>
           </div>
         </div>
       </div>

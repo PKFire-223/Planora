@@ -104,7 +104,6 @@ export type ActiveTab =
   | 'goals'
   | 'ai'
   | 'errors'
-  | 'structure'
   | 'notifications'
   | 'profile'
   | 'settings';

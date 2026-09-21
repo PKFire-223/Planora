@@ -1,15 +1,11 @@
 import { 
   LayoutDashboard, 
   BookOpen, 
-  CalendarDays,
+  CalendarDays, 
   CheckSquare, 
   StickyNote, 
   Target, 
   Bot, 
-  AlertCircle, 
-  FolderTree,
-  Database,
-  Layers,
   Home
 } from 'lucide-react';
 import { ActiveTab } from '../../types';
@@ -19,23 +15,29 @@ import { PlanoraLogo } from '../common/PlanoraLogo';
 interface SidebarProps {
   activeTab: ActiveTab;
   onTabChange: (tab: ActiveTab) => void;
-  errorCount: number;
+  errorCount?: number;
   onGoToLanding?: () => void;
+}
+
+interface NavItem {
+  id: ActiveTab;
+  label: string;
+  icon: any;
+  highlight?: boolean;
+  badge?: number;
 }
 
 export function Sidebar({ activeTab, onTabChange, errorCount, onGoToLanding }: SidebarProps) {
   const { isDark } = useTheme();
 
-  const navItems = [
-    { id: 'dashboard' as ActiveTab, label: 'Tổng Quan', icon: LayoutDashboard },
-    { id: 'courses' as ActiveTab, label: 'Khoá Học', icon: BookOpen },
-    { id: 'timetable' as ActiveTab, label: 'Thời Khóa Biểu', icon: CalendarDays },
-    { id: 'tasks' as ActiveTab, label: 'Kế Hoạch & Task', icon: CheckSquare },
-    { id: 'notes' as ActiveTab, label: 'Ghi Chú', icon: StickyNote },
-    { id: 'goals' as ActiveTab, label: 'Mục Tiêu', icon: Target },
-    { id: 'ai' as ActiveTab, label: 'Trợ Lý AI', icon: Bot, highlight: true },
-    { id: 'errors' as ActiveTab, label: 'Báo & Sửa Lỗi', icon: AlertCircle, badge: errorCount },
-    { id: 'structure' as ActiveTab, label: 'Cấu Trúc Dự Án', icon: FolderTree },
+  const navItems: NavItem[] = [
+    { id: 'dashboard', label: 'Tổng Quan', icon: LayoutDashboard },
+    { id: 'courses', label: 'Khoá Học', icon: BookOpen },
+    { id: 'timetable', label: 'Thời Khóa Biểu', icon: CalendarDays },
+    { id: 'tasks', label: 'Kế Hoạch & Task', icon: CheckSquare },
+    { id: 'notes', label: 'Ghi Chú', icon: StickyNote },
+    { id: 'goals', label: 'Mục Tiêu', icon: Target },
+    { id: 'ai', label: 'Trợ Lý AI', icon: Bot, highlight: true },
   ];
 
   return (
@@ -121,29 +123,6 @@ export function Sidebar({ activeTab, onTabChange, errorCount, onGoToLanding }: S
           );
         })}
       </nav>
-
-      {/* Footer System Status */}
-      <div className={`p-4 border-t text-xs ${
-        isDark ? 'border-neutral-800 bg-neutral-950/40 text-neutral-400' : 'border-slate-200 bg-slate-50 text-slate-500'
-      }`}>
-        <div className="flex items-center justify-between text-[11px] mb-1.5">
-          <span className="flex items-center gap-1.5">
-            <Database className="w-3.5 h-3.5" />
-            <span>Cơ sở dữ liệu:</span>
-          </span>
-          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            MongoDB Store
-          </span>
-        </div>
-        <div className="text-[11px] flex items-center justify-between text-slate-400 dark:text-neutral-500">
-          <span className="flex items-center gap-1">
-            <Layers className="w-3 h-3" />
-            <span>Mô hình Clean Architecture</span>
-          </span>
-          <span>Sẵn sàng</span>
-        </div>
-      </div>
     </aside>
   );
 }

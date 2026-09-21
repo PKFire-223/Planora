@@ -212,7 +212,7 @@ export const FALLBACK_TIMETABLE: import('../types').TimetableEntry[] = [
     id: 'tt-2',
     name: 'Lập Trình Web React 19',
     time: '09:30 - 11:45',
-    room: 'Phòng B1-405',
+    room: 'B1-405',
     instructor: 'ThS. Trần Minh Đức',
     notes: 'Kiểm tra đồ án giữa kỳ',
     color: 'sky',

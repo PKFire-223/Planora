@@ -62,10 +62,6 @@ export function Header({
       title: 'Trung Tâm Báo & Sửa Lỗi',
       subtitle: 'Ghi nhận sự cố, theo dõi trạng thái khắc phục và kiểm định chất lượng.'
     },
-    structure: {
-      title: 'Cấu Trúc Hệ Thống Planora',
-      subtitle: 'Kiến trúc phân chia thư mục Full-Stack chuẩn mực mở rộng theo module.'
-    },
     notifications: {
       title: 'Thông Báo & Nhắc Nhở',
       subtitle: 'Cập nhật deadline nộp bài, đề xuất tối ưu từ Gemini AI và hoạt động khóa học.'

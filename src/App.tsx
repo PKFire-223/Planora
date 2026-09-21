@@ -11,7 +11,6 @@ import { NotesView } from './features/notes/NotesView';
 import { GoalsView } from './features/goals/GoalsView';
 import { AiAssistantView } from './features/ai/AiAssistantView';
 import { ErrorReportsView } from './features/errorReports/ErrorReportsView';
-import { ProjectStructureView } from './features/structure/ProjectStructureView';
 import { NotificationsView } from './features/notifications/NotificationsView';
 import { ProfileView } from './features/profile/ProfileView';
 import { SettingsView } from './features/settings/SettingsView';
@@ -268,6 +267,7 @@ export default function App() {
                   tasks={tasks}
                   goals={goals}
                   errors={errors}
+                  notes={notes}
                   onNavigate={setActiveTab}
                   onToggleTask={handleToggleTask}
                 />
@@ -324,10 +324,6 @@ export default function App() {
                   onReportError={handleReportError}
                   onResolveError={handleResolveError}
                 />
-              )}
-
-              {activeTab === 'structure' && (
-                <ProjectStructureView />
               )}
 
               {activeTab === 'notifications' && (
