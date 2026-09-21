@@ -215,10 +215,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
       {/* ========================================================================= */}
       {/* 2. HERO SECTION                                                          */}
       {/* ========================================================================= */}
-      <section className="relative pt-12 pb-20 px-6 overflow-hidden">
-        {/* Ambient background glows */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-indigo-500/10 dark:bg-indigo-500/15 blur-3xl pointer-events-none rounded-full" />
-
+      <section className="relative pt-12 pb-20 px-6">
         <div className="max-w-5xl mx-auto text-center relative z-10">
           {/* Badge */}
           <div className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold mb-6 border ${
@@ -249,7 +246,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
           <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
             <button
               onClick={() => onOpenAuth('register')}
-              className="px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-sm sm:text-base shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2.5 cursor-pointer"
+              className="px-8 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-sm sm:text-base transition-all flex items-center gap-2.5 cursor-pointer shadow-xs"
             >
               <span>Bắt Đầu Ngay</span>
               <ArrowRight className="w-4 h-4" />
@@ -257,10 +254,10 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
 
             <button
               onClick={() => onOpenAuth('login')}
-              className={`px-8 py-4 rounded-2xl border font-bold text-sm sm:text-base transition-all flex items-center gap-2.5 cursor-pointer ${
+              className={`px-8 py-3.5 rounded-xl border font-bold text-sm sm:text-base transition-all flex items-center gap-2.5 cursor-pointer ${
                 isDark 
                   ? 'bg-neutral-900 border-neutral-800 text-white hover:bg-neutral-800' 
-                  : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 shadow-sm'
+                  : 'bg-white border-slate-200 text-slate-800 hover:bg-slate-50 shadow-xs'
               }`}
             >
               <LogIn className="w-4 h-4 text-indigo-500" />
@@ -271,10 +268,10 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
           {/* ===================================================================== */}
           {/* MOCKUP PREVIEW CARD: GIAO DIỆN HỌC TẬP TRỰC QUAN PLANORA              */}
           {/* ===================================================================== */}
-          <div className={`p-4 sm:p-6 rounded-3xl border shadow-2xl relative text-left transition-all ${
+          <div className={`p-4 sm:p-6 rounded-2xl border text-left transition-all ${
             isDark 
-              ? 'bg-neutral-900 border-neutral-800 shadow-black/60' 
-              : 'bg-white border-slate-200 shadow-indigo-100'
+              ? 'bg-neutral-900 border-neutral-800' 
+              : 'bg-white border-slate-200 shadow-xs'
           }`}>
             {/* Window bar: Bỏ đường dẫn website app.planora.edu.vn */}
             <div className={`flex items-center justify-between pb-4 mb-5 border-b text-xs ${
@@ -452,13 +449,13 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
             return (
               <div
                 key={idx}
-                className={`p-7 rounded-3xl border transition-all duration-200 hover:-translate-y-1 ${
+                className={`p-6 rounded-2xl border transition-all ${
                   feat.highlight
                     ? isDark 
-                      ? 'bg-neutral-900 border-indigo-500/40 shadow-xl shadow-indigo-950/40' 
-                      : 'bg-white border-indigo-300 shadow-lg shadow-indigo-50'
+                      ? 'bg-neutral-900 border-indigo-500/40 shadow-xs' 
+                      : 'bg-white border-indigo-300 shadow-xs'
                     : isDark 
-                      ? 'bg-neutral-900/70 border-neutral-800 hover:border-neutral-700' 
+                      ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700' 
                       : 'bg-white border-slate-200 shadow-xs hover:border-slate-300'
                 }`}
               >
@@ -497,11 +494,11 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* AI Feature 1: Subtask Generator */}
-            <div className={`p-7 rounded-3xl border flex flex-col justify-between transition-all ${
-              isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+            <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+              isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
             }`}>
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-5">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center mb-5">
                   <Zap className="w-6 h-6" />
                 </div>
                 <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -511,7 +508,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
                   Chỉ cần nhập tên đồ án (ví dụ: "Xây dựng website bán hàng"), Gemini AI sẽ tự động phân rã thành 3-5 nhiệm vụ cụ thể 30 phút có thể bắt tay làm ngay.
                 </p>
               </div>
-              <div className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
+              <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
                 isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}>
                 <div className="font-semibold text-cyan-500 text-[11px] uppercase tracking-wider">Ví dụ phân rã:</div>
@@ -531,11 +528,11 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
             </div>
 
             {/* AI Feature 2: Code Explainer & Debugger */}
-            <div className={`p-7 rounded-3xl border flex flex-col justify-between transition-all ${
-              isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+            <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+              isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
             }`}>
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-5">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-5">
                   <Code2 className="w-6 h-6" />
                 </div>
                 <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -545,7 +542,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
                   Dán đoạn code báo lỗi hoặc bài tập thuật toán phức tạp để nhận phân tích chi tiết nguyên nhân, giải pháp tối ưu và độ phức tạp Big-O.
                 </p>
               </div>
-              <div className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
+              <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
                 isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}>
                 <div className="font-semibold text-indigo-500 text-[11px] uppercase tracking-wider">Hỗ trợ đa ngôn ngữ:</div>
@@ -558,11 +555,11 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
             </div>
 
             {/* AI Feature 3: Schedule Optimizer */}
-            <div className={`p-7 rounded-3xl border flex flex-col justify-between transition-all ${
-              isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+            <div className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+              isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
             }`}>
               <div>
-                <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-5">
+                <div className="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center mb-5">
                   <CalendarDays className="w-6 h-6" />
                 </div>
                 <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -572,7 +569,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
                   Hỏi đáp trực tiếp bằng ngôn ngữ tự nhiên: yêu cầu AI sắp xếp thời gian biểu tuần, lập kế hoạch ôn thi môn Giải tích hoặc chuẩn bị đồ án tốt nghiệp.
                 </p>
               </div>
-              <div className={`p-3.5 rounded-2xl border text-xs space-y-2 ${
+              <div className={`p-3.5 rounded-xl border text-xs space-y-2 ${
                 isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
               }`}>
                 <div className="font-semibold text-purple-500 text-[11px] uppercase tracking-wider">Tương tác Socratic:</div>
@@ -604,7 +601,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
             {stats.map((item, idx) => (
-              <div key={idx} className={`p-6 rounded-3xl border transition-all ${
+              <div key={idx} className={`p-6 rounded-2xl border transition-all ${
                 isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
               }`}>
                 <div className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-cyan-500 to-blue-600 mb-2">
@@ -637,8 +634,8 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
           {testimonials.map((review, idx) => (
             <div
               key={idx}
-              className={`p-7 rounded-3xl border flex flex-col justify-between transition-all ${
-                isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-sm'
+              className={`p-6 rounded-2xl border flex flex-col justify-between transition-all ${
+                isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
               }`}
             >
               <div>
@@ -663,38 +660,6 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
           ))}
         </div>
       </section>
-
-      {/* ========================================================================= */}
-      {/* 7. FOOTER TINH GỌN & HỢP NHẤT: ĐÃ BỎ 4 DANH MỤC TRÙNG LẶP                  */}
-      {/* ========================================================================= */}
-      <footer className={`py-6 border-t transition-colors ${
-        isDark ? 'bg-neutral-950 border-neutral-800 text-neutral-400' : 'bg-white border-slate-200 text-slate-600'
-      }`}>
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          {/* Logo & Bản quyền */}
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left">
-            <PlanoraLogo size="md" />
-            <span className="hidden sm:inline text-neutral-300 dark:text-neutral-700">•</span>
-            <p className="text-xs">
-              © 2026 Planora LMS. Nền tảng Quản Lý Kế Hoạch & Học Tập Cá Nhân.
-            </p>
-          </div>
-
-          {/* Trạng thái hệ thống & Bảo mật */}
-          <div className="flex items-center gap-4 text-xs">
-            <div className="flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
-              <ShieldCheck className="w-4 h-4 text-indigo-500" />
-              <span>Bảo mật & Đồng bộ thời gian thực</span>
-            </div>
-            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${
-              isDark ? 'bg-neutral-900 border-neutral-800 text-emerald-400' : 'bg-emerald-50 border-emerald-200 text-emerald-700'
-            }`}>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>Phiên bản v1.0 • Hoạt động ổn định</span>
-            </span>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

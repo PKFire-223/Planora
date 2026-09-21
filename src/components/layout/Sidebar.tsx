@@ -1,6 +1,7 @@
 import { 
   LayoutDashboard, 
   BookOpen, 
+  CalendarDays,
   CheckSquare, 
   StickyNote, 
   Target, 
@@ -28,6 +29,7 @@ export function Sidebar({ activeTab, onTabChange, errorCount, onGoToLanding }: S
   const navItems = [
     { id: 'dashboard' as ActiveTab, label: 'Tổng Quan', icon: LayoutDashboard },
     { id: 'courses' as ActiveTab, label: 'Khoá Học', icon: BookOpen },
+    { id: 'timetable' as ActiveTab, label: 'Thời Khóa Biểu', icon: CalendarDays },
     { id: 'tasks' as ActiveTab, label: 'Kế Hoạch & Task', icon: CheckSquare },
     { id: 'notes' as ActiveTab, label: 'Ghi Chú', icon: StickyNote },
     { id: 'goals' as ActiveTab, label: 'Mục Tiêu', icon: Target },

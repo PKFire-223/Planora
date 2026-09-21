@@ -5,14 +5,19 @@ import { LandingPageView } from './features/landing/LandingPageView';
 import { AuthSplitView } from './features/auth/AuthSplitView';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { CoursesView } from './features/courses/CoursesView';
+import { TimetableView } from './features/timetable/TimetableView';
 import { TasksView } from './features/tasks/TasksView';
 import { NotesView } from './features/notes/NotesView';
 import { GoalsView } from './features/goals/GoalsView';
 import { AiAssistantView } from './features/ai/AiAssistantView';
 import { ErrorReportsView } from './features/errorReports/ErrorReportsView';
 import { ProjectStructureView } from './features/structure/ProjectStructureView';
+import { NotificationsView } from './features/notifications/NotificationsView';
+import { ProfileView } from './features/profile/ProfileView';
+import { SettingsView } from './features/settings/SettingsView';
 import { api } from './services/api';
-import { Course, Task, Note, Goal, ErrorReport, ActiveTab } from './types';
+import { Course, Task, Note, Goal, ErrorReport, ActiveTab, NotificationItem } from './types';
+import { FALLBACK_NOTIFICATIONS } from './data/fallbackData';
 import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 
@@ -30,7 +35,36 @@ export default function App() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [errors, setErrors] = useState<ErrorReport[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('planora_notifications');
+      return saved ? JSON.parse(saved) : FALLBACK_NOTIFICATIONS;
+    } catch {
+      return FALLBACK_NOTIFICATIONS;
+    }
+  });
   const [loading, setLoading] = useState(true);
+
+  // Persist notifications on change
+  useEffect(() => {
+    try {
+      localStorage.setItem('planora_notifications', JSON.stringify(notifications));
+    } catch {
+      // ignore storage error
+    }
+  }, [notifications]);
+
+  const handleMarkAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleMarkAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  };
+
+  const handleDeleteNotification = (id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   // Load initial data from backend API with automatic fallback
   const loadData = async () => {
@@ -213,6 +247,10 @@ export default function App() {
           onOpenAi={() => setActiveTab('ai')}
           onGoToLanding={() => setViewMode('landing')}
           onOpenAuth={(tab) => handleOpenAuth(tab)}
+          notifications={notifications}
+          onMarkAsRead={handleMarkAsRead}
+          onMarkAllAsRead={handleMarkAllAsRead}
+          onNavigate={setActiveTab}
         />
 
         <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
@@ -241,6 +279,12 @@ export default function App() {
                   onCreateCourse={handleCreateCourse}
                   onUpdateCourse={handleUpdateCourse}
                   onDeleteCourse={handleDeleteCourse}
+                />
+              )}
+
+              {activeTab === 'timetable' && (
+                <TimetableView
+                  onNavigateToCourses={() => setActiveTab('courses')}
                 />
               )}
 
@@ -284,6 +328,24 @@ export default function App() {
 
               {activeTab === 'structure' && (
                 <ProjectStructureView />
+              )}
+
+              {activeTab === 'notifications' && (
+                <NotificationsView
+                  notifications={notifications}
+                  onMarkAsRead={handleMarkAsRead}
+                  onMarkAllAsRead={handleMarkAllAsRead}
+                  onDeleteNotification={handleDeleteNotification}
+                  onNavigate={setActiveTab}
+                />
+              )}
+
+              {activeTab === 'profile' && (
+                <ProfileView />
+              )}
+
+              {activeTab === 'settings' && (
+                <SettingsView />
               )}
             </>
           )}

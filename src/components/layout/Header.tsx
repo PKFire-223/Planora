@@ -1,18 +1,33 @@
-import { Sparkles, Sun, Moon, LogIn, LogOut, Shield, GraduationCap, Home } from 'lucide-react';
-import { ActiveTab } from '../../types';
+import { Sparkles, Sun, Moon, LogIn } from 'lucide-react';
+import { ActiveTab, NotificationItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { UserMenu } from './UserMenu';
+import { NotificationPopover } from './NotificationPopover';
 
 interface HeaderProps {
   activeTab: ActiveTab;
   onOpenAi: () => void;
   onGoToLanding?: () => void;
   onOpenAuth?: (tab: 'login' | 'register') => void;
+  notifications: NotificationItem[];
+  onMarkAsRead: (id: string) => void;
+  onMarkAllAsRead: () => void;
+  onNavigate: (tab: ActiveTab) => void;
 }
 
-export function Header({ activeTab, onOpenAi, onGoToLanding, onOpenAuth }: HeaderProps) {
+export function Header({ 
+  activeTab, 
+  onOpenAi, 
+  onGoToLanding,
+  onOpenAuth,
+  notifications,
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onNavigate
+}: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
-  const { user, isAdmin, logout } = useAuth();
+  const { user } = useAuth();
 
   const titles: Record<ActiveTab, { title: string; subtitle: string }> = {
     dashboard: {
@@ -22,6 +37,10 @@ export function Header({ activeTab, onOpenAi, onGoToLanding, onOpenAuth }: Heade
     courses: {
       title: 'Khoá Học & Môn Học',
       subtitle: 'Danh sách môn học, tiến độ hoàn thành và phân bổ bài giảng.'
+    },
+    timetable: {
+      title: 'Thời Khóa Biểu & Lịch Học',
+      subtitle: 'Xếp lịch học Sáng/Chiều từ T2 đến CN bằng kéo thả trực quan và quản lý phòng học tự do.'
     },
     tasks: {
       title: 'Kế Hoạch & Bài Tập',
@@ -46,6 +65,18 @@ export function Header({ activeTab, onOpenAi, onGoToLanding, onOpenAuth }: Heade
     structure: {
       title: 'Cấu Trúc Hệ Thống Planora',
       subtitle: 'Kiến trúc phân chia thư mục Full-Stack chuẩn mực mở rộng theo module.'
+    },
+    notifications: {
+      title: 'Thông Báo & Nhắc Nhở',
+      subtitle: 'Cập nhật deadline nộp bài, đề xuất tối ưu từ Gemini AI và hoạt động khóa học.'
+    },
+    profile: {
+      title: 'Thông Tin Cá Nhân',
+      subtitle: 'Hồ sơ học viên, thông tin liên hệ và chuyên ngành đào tạo.'
+    },
+    settings: {
+      title: 'Cài Đặt & Tuỳ Chỉnh',
+      subtitle: 'Quản lý giao diện, thông báo, mật khẩu và trải nghiệm cá nhân.'
     }
   };
 
@@ -59,9 +90,9 @@ export function Header({ activeTab, onOpenAi, onGoToLanding, onOpenAuth }: Heade
     }`}>
       {/* Title & Subtitle */}
       <div>
-        <h2 className="text-base font-bold tracking-tight flex items-center gap-2">
-          <span>{current.title}</span>
-        </h2>
+        <h1 className="text-base sm:text-lg font-bold tracking-tight">
+          {current.title}
+        </h1>
         <p className={`text-xs hidden sm:block ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
           {current.subtitle}
         </p>
@@ -69,22 +100,6 @@ export function Header({ activeTab, onOpenAi, onGoToLanding, onOpenAuth }: Heade
 
       {/* Action Controls */}
       <div className="flex items-center gap-2.5">
-        {/* Go to Landing page */}
-        {onGoToLanding && (
-          <button
-            onClick={onGoToLanding}
-            title="Quay lại trang giới thiệu Planora"
-            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-              isDark
-                ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-800'
-                : 'bg-white border-slate-200 text-slate-700 hover:text-indigo-600 hover:bg-slate-50 shadow-2xs'
-            }`}
-          >
-            <Home className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-            <span className="hidden sm:inline">Trang Giới Thiệu</span>
-          </button>
-        )}
-
         {/* Ask AI button */}
         <button
           onClick={onOpenAi}
@@ -116,44 +131,19 @@ export function Header({ activeTab, onOpenAi, onGoToLanding, onOpenAuth }: Heade
           )}
         </button>
 
+        {/* Icon thông báo pop-up */}
+        <NotificationPopover
+          notifications={notifications}
+          onMarkAsRead={onMarkAsRead}
+          onMarkAllAsRead={onMarkAllAsRead}
+          onNavigate={onNavigate}
+        />
+
         <div className={`h-5 w-px ${isDark ? 'bg-neutral-800' : 'bg-slate-200'}`} />
 
-        {/* Auth Section */}
+        {/* User Account Menu Pop-up (Logo duy nhất, bấm hiện pop-up hồ sơ, cài đặt, đăng xuất) */}
         {user ? (
-          <div className="flex items-center gap-2">
-            <div className={`flex items-center gap-2 px-2.5 py-1 rounded-xl border text-xs ${
-              isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-200' : 'bg-slate-50 border-slate-200 text-slate-800'
-            }`}>
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] ${
-                isAdmin 
-                  ? 'bg-rose-500/20 text-rose-500' 
-                  : 'bg-indigo-500/20 text-indigo-600'
-              }`}>
-                {isAdmin ? <Shield className="w-3.5 h-3.5" /> : <GraduationCap className="w-3.5 h-3.5" />}
-              </div>
-              <div className="hidden md:flex flex-col text-left">
-                <span className="font-semibold text-xs leading-none">{user.name}</span>
-                <span className={`text-[10px] leading-tight font-medium ${isAdmin ? 'text-rose-500' : 'text-slate-500'}`}>
-                  {isAdmin ? 'Quản Trị Viên' : 'Học Viên'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                logout();
-                if (onGoToLanding) onGoToLanding();
-              }}
-              title="Đăng xuất khỏi tài khoản"
-              className={`p-2 rounded-xl border transition-colors cursor-pointer ${
-                isDark 
-                  ? 'bg-neutral-900 border-neutral-800 text-neutral-400 hover:text-rose-400 hover:bg-neutral-800' 
-                  : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-rose-600 hover:bg-slate-200'
-              }`}
-            >
-              <LogOut className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <UserMenu onNavigate={onNavigate} onGoToLanding={onGoToLanding} />
         ) : (
           <div className="flex items-center gap-2">
             <button

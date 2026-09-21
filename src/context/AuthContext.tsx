@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
+  updateUser: (data: Partial<User>) => void;
   openLoginModal: () => void;
   openRegisterModal: () => void;
   closeAuthModal: () => void;
@@ -112,6 +113,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = (data: Partial<User>) => {
+    setUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...data };
+      localStorage.setItem('planora_user', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const openLoginModal = () => {
     setAuthModalTab('login');
     setIsAuthModalOpen(true);
@@ -138,6 +148,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         logout,
+        updateUser,
         openLoginModal,
         openRegisterModal,
         closeAuthModal,

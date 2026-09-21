@@ -156,3 +156,135 @@ export const FALLBACK_ERRORS: ErrorReport[] = [
     reportedAt: '2026-09-20'
   }
 ];
+
+export const FALLBACK_NOTIFICATIONS = [
+  {
+    id: 'notif-1',
+    title: 'Hạn nộp đồ án môn Kiến Trúc Microservices',
+    message: 'Bạn còn 24 giờ để hoàn thiện cài đặt Mongoose Schema và nộp báo cáo.',
+    type: 'deadline' as const,
+    timestamp: '15 phút trước',
+    read: false,
+    linkTab: 'tasks' as const
+  },
+  {
+    id: 'notif-2',
+    title: 'Gemini AI đã hoàn thành gợi ý lộ trình',
+    message: 'Kế hoạch học tập tuần mới cho môn Giải Thuật Nâng Cao đã sẵn sàng để xem xét.',
+    type: 'ai' as const,
+    timestamp: '1 giờ trước',
+    read: false,
+    linkTab: 'ai' as const
+  },
+  {
+    id: 'notif-3',
+    title: 'Mục tiêu tuần đạt tiến độ 80%',
+    message: 'Chúc mừng! Bạn đã hoàn thành 4/5 mục tiêu học tập đề ra cho tuần này.',
+    type: 'success' as const,
+    timestamp: 'Hôm qua',
+    read: true,
+    linkTab: 'goals' as const
+  },
+  {
+    id: 'notif-4',
+    title: 'Chào mừng bạn đến với Planora LMS',
+    message: 'Hãy bắt đầu bằng việc thêm các môn học kỳ này và tạo danh sách nhiệm vụ đầu tiên.',
+    type: 'info' as const,
+    timestamp: '2 ngày trước',
+    read: true,
+    linkTab: 'courses' as const
+  }
+];
+
+export const FALLBACK_TIMETABLE: import('../types').TimetableEntry[] = [
+  {
+    id: 'tt-1',
+    name: 'Kiến Trúc Microservices & Node.js',
+    time: '07:00 - 09:15',
+    room: 'Lab A2-302',
+    instructor: 'TS. Nguyễn Văn Toàn',
+    notes: 'Thực hành kết nối Docker & Redis',
+    color: 'indigo',
+    day: 'mon',
+    session: 'morning'
+  },
+  {
+    id: 'tt-2',
+    name: 'Lập Trình Web React 19',
+    time: '09:30 - 11:45',
+    room: 'Phòng B1-405',
+    instructor: 'ThS. Trần Minh Đức',
+    notes: 'Kiểm tra đồ án giữa kỳ',
+    color: 'sky',
+    day: 'mon',
+    session: 'morning'
+  },
+  {
+    id: 'tt-3',
+    name: 'Hệ Quản Trị Cơ Sở Dữ Liệu',
+    time: '13:30 - 16:00',
+    room: 'Lab C4-101',
+    instructor: 'TS. Lê Hoàng Mai',
+    notes: 'Tối ưu chỉ mục và Transaction',
+    color: 'emerald',
+    day: 'tue',
+    session: 'afternoon'
+  },
+  {
+    id: 'tt-4',
+    name: 'Trí Tuệ Nhân Tạo & Machine Learning',
+    time: '07:30 - 10:30',
+    room: 'Hội trường H1',
+    instructor: 'PGS. Vũ Đình Trí',
+    notes: 'Học mô hình Transformer & LLM',
+    color: 'purple',
+    day: 'wed',
+    session: 'morning'
+  },
+  {
+    id: 'tt-5',
+    name: 'An Ninh Mạng & Mật Mã Học',
+    time: '13:15 - 16:30',
+    room: 'Lab An Ninh Mạng',
+    instructor: 'ThS. Đặng Hữu Phong',
+    color: 'amber',
+    day: 'thu',
+    session: 'afternoon'
+  },
+  {
+    id: 'tt-6',
+    name: 'Toán Rời Rạc & Lý Thuyết Đồ Thị',
+    time: '07:30 - 09:45',
+    room: 'P204',
+    color: 'rose',
+    day: 'fri',
+    session: 'morning'
+  },
+  {
+    id: 'tt-7',
+    name: 'Tự học thư viện & Luyện thuật toán',
+    time: '14:00 - 16:30',
+    room: '', // Tự do để trống phòng
+    notes: 'Luyện 3 bài LeetCode Medium',
+    color: 'teal'
+    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+  },
+  {
+    id: 'tt-8',
+    name: 'Seminar Công Nghệ Cloud & DevOps',
+    time: '09:00 - 11:30',
+    room: 'Online Zoom',
+    notes: 'Hội thảo trực tuyến với diễn giả',
+    color: 'indigo'
+    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+  },
+  {
+    id: 'tt-9',
+    name: 'Sinh Hoạt Nhóm Đồ Án Tốt Nghiệp',
+    time: '15:00 - 17:00',
+    room: 'Căn tin tầng 2',
+    color: 'emerald'
+    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+  }
+];
+

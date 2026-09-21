@@ -60,20 +60,54 @@ export interface User {
   name: string;
   email: string;
   role: 'admin' | 'student';
+  avatar?: string;
+  bio?: string;
+  phone?: string;
+  studentCode?: string;
+  faculty?: string;
   createdAt: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'success' | 'warning' | 'ai' | 'deadline';
+  timestamp: string;
+  read: boolean;
+  linkTab?: ActiveTab;
 }
 
 export type ThemeMode = 'light' | 'dark';
 
+export type DayOfWeek = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun';
+export type DaySession = 'morning' | 'afternoon';
+
+export interface TimetableEntry {
+  id: string;
+  name: string; // Tên môn / nội dung tự do nhập
+  time: string; // Giờ học (VD: 07:00 - 09:15)
+  room?: string; // Tự do nhập gì cũng được, không ép buộc
+  instructor?: string; // Giảng viên / người hướng dẫn (tuỳ chọn)
+  notes?: string; // Ghi chú thêm
+  color: 'indigo' | 'sky' | 'emerald' | 'amber' | 'rose' | 'purple' | 'teal';
+  day?: DayOfWeek; // Thứ trong tuần nếu đã xếp lịch
+  session?: DaySession; // Sáng hoặc Chiều
+}
+
 export type ActiveTab = 
   | 'dashboard'
   | 'courses'
+  | 'timetable'
   | 'tasks'
   | 'notes'
   | 'goals'
   | 'ai'
   | 'errors'
-  | 'structure';
+  | 'structure'
+  | 'notifications'
+  | 'profile'
+  | 'settings';
 
 // Legacy types for existing components
 export interface Project {

@@ -9,10 +9,14 @@ import {
   AlertCircle,
   TrendingUp,
   FolderTree,
-  CheckCircle2
+  CheckCircle2,
+  CalendarDays,
+  MapPin,
+  Calendar
 } from 'lucide-react';
-import { Course, Task, Goal, ErrorReport, ActiveTab } from '../../types';
+import { Course, Task, Goal, ErrorReport, ActiveTab, TimetableEntry } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
+import { FALLBACK_TIMETABLE } from '../../data/fallbackData';
 
 interface DashboardViewProps {
   courses: Course[];
@@ -33,10 +37,31 @@ export function DashboardView({
 }: DashboardViewProps) {
   const { isDark } = useTheme();
 
+  // Load timetable for quick preview
+  const scheduledItems: TimetableEntry[] = (() => {
+    try {
+      const saved = localStorage.getItem('planora_timetable');
+      const items: TimetableEntry[] = saved ? JSON.parse(saved) : FALLBACK_TIMETABLE;
+      return items.filter(i => Boolean(i.day && i.session));
+    } catch {
+      return FALLBACK_TIMETABLE.filter(i => Boolean(i.day && i.session));
+    }
+  })();
+
   const pendingTasks = tasks.filter(t => t.status !== 'done');
   const completedTasks = tasks.filter(t => t.status === 'done');
   const inProgressCourses = courses.filter(c => c.status === 'in_progress');
   const openErrors = errors.filter(e => e.status !== 'resolved');
+
+  const dayLabels: Record<string, string> = {
+    mon: 'Thứ 2',
+    tue: 'Thứ 3',
+    wed: 'Thứ 4',
+    thu: 'Thứ 5',
+    fri: 'Thứ 6',
+    sat: 'Thứ 7',
+    sun: 'CN'
+  };
 
   return (
     <div className="space-y-6">
@@ -71,6 +96,17 @@ export function DashboardView({
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-medium transition-colors shadow-sm cursor-pointer"
           >
             Làm Bài Tập Ngay
+          </button>
+          <button
+            onClick={() => onNavigate('timetable')}
+            className={`px-3.5 py-2 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              isDark
+                ? 'bg-neutral-900 hover:bg-neutral-800 border-neutral-700 text-neutral-200'
+                : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700 shadow-2xs'
+            }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Thời Khóa Biểu</span>
           </button>
           <button
             onClick={() => onNavigate('ai')}
@@ -329,8 +365,77 @@ export function DashboardView({
           </div>
         </div>
 
-        {/* Right 1 Col: Goals, AI Insight */}
+        {/* Right 1 Col: Timetable, Goals, AI Insight */}
         <div className="space-y-6">
+          {/* Weekly Timetable Preview Widget */}
+          <div className={`p-5 rounded-2xl border transition-colors ${
+            isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className={`font-bold text-sm flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                <CalendarDays className="w-4 h-4 text-indigo-500" />
+                <span>Thời Khóa Biểu Tuần Này</span>
+              </h3>
+              <button
+                onClick={() => onNavigate('timetable')}
+                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
+              >
+                <span>Xem TKB</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {scheduledItems.slice(0, 3).map(item => (
+                <div
+                  key={item.id}
+                  onClick={() => onNavigate('timetable')}
+                  className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                    isDark 
+                      ? 'bg-neutral-950/60 border-neutral-800 hover:border-neutral-700' 
+                      : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className={`text-xs font-semibold truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {item.name}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-500 dark:text-neutral-400">
+                        <span className="flex items-center gap-1 font-medium">
+                          <Clock className="w-3 h-3 text-indigo-500" />
+                          <span>{item.time}</span>
+                        </span>
+                        {item.room && (
+                          <span className="flex items-center gap-1 font-medium truncate">
+                            <MapPin className="w-3 h-3 text-emerald-500" />
+                            <span className="truncate">{item.room}</span>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 shrink-0">
+                      {item.day ? dayLabels[item.day] : ''} • {item.session === 'morning' ? 'Sáng' : 'Chiều'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              onClick={() => onNavigate('timetable')}
+              className={`w-full mt-3 py-2 px-3 rounded-xl border text-xs font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                isDark 
+                  ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700 text-neutral-200' 
+                  : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-700'
+              }`}
+            >
+              <span>Mở bảng thời khóa biểu đầy đủ</span>
+              <ArrowUpRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
           {/* Active Goals */}
           <div className={`p-5 rounded-2xl border transition-colors ${
             isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
