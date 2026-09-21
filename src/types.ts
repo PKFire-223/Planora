@@ -122,13 +122,10 @@ export type DaySession = 'morning' | 'afternoon';
 
 export interface TimetableEntry {
   id: string;
-  courseId?: string; // ID môn học liên kết từ danh sách Course
-  courseCode?: string; // Mã môn học (VD: ARC-301, DSA-202)
-  name: string; // Tên môn / nội dung
+  name: string; // Tên môn / nội dung tự do nhập
   time: string; // Giờ học (VD: 07:00 - 09:15)
-  room?: string; // Phòng học
+  room?: string; // Tự do nhập gì cũng được, không ép buộc
   instructor?: string; // Giảng viên / người hướng dẫn (tuỳ chọn)
-  credits?: number; // Số tín chỉ môn học
   notes?: string; // Ghi chú thêm
   color: 'indigo' | 'sky' | 'emerald' | 'amber' | 'rose' | 'purple' | 'teal';
   day?: DayOfWeek; // Thứ trong tuần nếu đã xếp lịch

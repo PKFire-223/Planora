@@ -330,86 +330,92 @@ export const FALLBACK_NOTIFICATIONS = [
 export const FALLBACK_TIMETABLE: import('../types').TimetableEntry[] = [
   {
     id: 'tt-1',
-    courseId: 'course-1',
-    courseCode: 'ARC-301',
     name: 'Kiến Trúc Microservices & Node.js',
-    time: '07:30 - 09:30',
-    room: 'Phòng B1-405',
-    instructor: 'TS. Nguyễn Văn A',
-    credits: 3,
+    time: '07:00 - 09:15',
+    room: 'Lab A2-302',
+    instructor: 'TS. Nguyễn Văn Toàn',
     notes: 'Thực hành kết nối Docker & Redis',
-    color: 'rose',
+    color: 'indigo',
     day: 'mon',
     session: 'morning'
   },
   {
     id: 'tt-2',
-    courseId: 'course-2',
-    courseCode: 'DSA-202',
-    name: 'Cấu Trúc Dữ Liệu & Giải Thuật Nâng Cao',
-    time: '13:30 - 16:00',
-    room: 'Phòng C3.02 (Lab Máy Tính)',
-    instructor: 'ThS. Trần Thị B',
-    credits: 4,
-    notes: 'Luyện tập giải thuật đồ thị & LeetCode',
-    color: 'amber',
-    day: 'wed',
-    session: 'afternoon'
+    name: 'Lập Trình Web React 19',
+    time: '09:30 - 11:45',
+    room: 'B1-405',
+    instructor: 'ThS. Trần Minh Đức',
+    notes: 'Kiểm tra đồ án giữa kỳ',
+    color: 'sky',
+    day: 'mon',
+    session: 'morning'
   },
   {
     id: 'tt-3',
-    courseId: 'course-4',
-    courseCode: 'AI-401',
-    name: 'Học Máy và Trí Tuệ Nhân Tạo Ứng Dụng',
-    time: '09:45 - 12:00',
-    room: 'Phòng A2-302',
-    instructor: 'PGS. TS. Hoàng Minh D',
-    credits: 3,
-    notes: 'Học mô hình Transformer & LLM',
-    color: 'indigo',
-    day: 'thu',
-    session: 'morning'
-  },
-  {
-    id: 'tt-4',
-    courseId: 'course-3',
-    courseCode: 'FE-101',
-    name: 'Phát Triển Ứng Dụng Web Hiện Đại với React 19',
-    time: '08:00 - 11:15',
-    room: 'Online qua LMS / Google Meet',
-    instructor: 'Lê Hoàng C',
-    credits: 3,
-    notes: 'Server Components & State Management',
+    name: 'Hệ Quản Trị Cơ Sở Dữ Liệu',
+    time: '13:30 - 16:00',
+    room: 'Lab C4-101',
+    instructor: 'TS. Lê Hoàng Mai',
+    notes: 'Tối ưu chỉ mục và Transaction',
     color: 'emerald',
-    day: 'fri',
-    session: 'morning'
-  },
-  {
-    id: 'tt-5',
-    name: 'Tự học thư viện & Luyện thuật toán',
-    time: '14:00 - 16:30',
-    room: 'Thư viện Tầng 3',
-    notes: 'Luyện 3 bài LeetCode Medium',
-    color: 'teal',
     day: 'tue',
     session: 'afternoon'
   },
   {
+    id: 'tt-4',
+    name: 'Trí Tuệ Nhân Tạo & Machine Learning',
+    time: '07:30 - 10:30',
+    room: 'Hội trường H1',
+    instructor: 'PGS. Vũ Đình Trí',
+    notes: 'Học mô hình Transformer & LLM',
+    color: 'purple',
+    day: 'wed',
+    session: 'morning'
+  },
+  {
+    id: 'tt-5',
+    name: 'An Ninh Mạng & Mật Mã Học',
+    time: '13:15 - 16:30',
+    room: 'Lab An Ninh Mạng',
+    instructor: 'ThS. Đặng Hữu Phong',
+    color: 'amber',
+    day: 'thu',
+    session: 'afternoon'
+  },
+  {
     id: 'tt-6',
+    name: 'Toán Rời Rạc & Lý Thuyết Đồ Thị',
+    time: '07:30 - 09:45',
+    room: 'P204',
+    color: 'rose',
+    day: 'fri',
+    session: 'morning'
+  },
+  {
+    id: 'tt-7',
+    name: 'Tự học thư viện & Luyện thuật toán',
+    time: '14:00 - 16:30',
+    room: '', // Tự do để trống phòng
+    notes: 'Luyện 3 bài LeetCode Medium',
+    color: 'teal'
+    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+  },
+  {
+    id: 'tt-8',
     name: 'Seminar Công Nghệ Cloud & DevOps',
     time: '09:00 - 11:30',
     room: 'Online Zoom',
     notes: 'Hội thảo trực tuyến với diễn giả',
-    color: 'sky'
-    // Chưa xếp lịch (xuất hiện ở kho môn bên trái)
+    color: 'indigo'
+    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
   },
   {
-    id: 'tt-7',
+    id: 'tt-9',
     name: 'Sinh Hoạt Nhóm Đồ Án Tốt Nghiệp',
     time: '15:00 - 17:00',
     room: 'Căn tin tầng 2',
-    color: 'purple'
-    // Chưa xếp lịch (xuất hiện ở kho môn bên trái)
+    color: 'emerald'
+    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
   }
 ];
 

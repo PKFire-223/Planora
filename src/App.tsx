@@ -300,11 +300,7 @@ export default function App() {
 
               {activeTab === 'timetable' && (
                 <TimetableView
-                  courses={courses}
-                  onUpdateCourse={handleUpdateCourse}
                   onNavigateToCourses={() => setActiveTab('courses')}
-                  onNavigateToTab={handleNavigateWithContext}
-                  initialHighlightCourseId={crossContext.courseId}
                 />
               )}
 
