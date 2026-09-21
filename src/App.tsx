@@ -14,13 +14,15 @@ import { ProjectStructureView } from './features/structure/ProjectStructureView'
 import { api } from './services/api';
 import { Course, Task, Note, Goal, ErrorReport, ActiveTab } from './types';
 import { useTheme } from './context/ThemeContext';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
   const { isDark } = useTheme();
+  const { user } = useAuth();
 
   // Primary view navigation: 'landing' (first view), 'auth' (split-screen), 'app' (LMS workspace)
   const [viewMode, setViewMode] = useState<'landing' | 'auth' | 'app'>('landing');
-  const [authTab, setAuthTab] = useState<'login' | 'register' | 'forgot'>('login');
+  const [authTab, setAuthTab] = useState<'login' | 'register'>('login');
 
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [courses, setCourses] = useState<Course[]>([]);
@@ -149,7 +151,7 @@ export default function App() {
 
   const openErrorCount = errors.filter(e => e.status !== 'resolved').length;
 
-  const handleOpenAuth = (tab: 'login' | 'register' | 'forgot' = 'login') => {
+  const handleOpenAuth = (tab: 'login' | 'register' = 'login') => {
     setAuthTab(tab);
     setViewMode('auth');
   };
@@ -159,7 +161,13 @@ export default function App() {
     return (
       <LandingPageView
         onOpenAuth={handleOpenAuth}
-        onEnterApp={() => setViewMode('app')}
+        onEnterApp={() => {
+          if (user) {
+            setViewMode('app');
+          } else {
+            handleOpenAuth('login');
+          }
+        }}
       />
     );
   }
@@ -175,7 +183,17 @@ export default function App() {
     );
   }
 
-  // VIEW 3: Không Gian Học Tập Planora LMS Workspace
+  // VIEW 3: Không Gian Học Tập Planora LMS Workspace (Yêu cầu đăng nhập chuẩn như web bình thường)
+  if (!user) {
+    return (
+      <AuthSplitView
+        initialTab="login"
+        onBackToLanding={() => setViewMode('landing')}
+        onEnterApp={() => setViewMode('app')}
+      />
+    );
+  }
+
   return (
     <div className={`min-h-screen flex flex-row transition-colors duration-200 ${
       isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-slate-50 text-slate-900'

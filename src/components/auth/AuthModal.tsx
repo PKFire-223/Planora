@@ -122,30 +122,6 @@ export function AuthModal() {
           </button>
         </div>
 
-        {/* 1-Click Quick Fill Admin */}
-        <div className={`mb-4 p-3 rounded-xl border flex items-center justify-between gap-3 ${
-          isDark 
-            ? 'bg-indigo-950/40 border-indigo-800/60 text-indigo-200' 
-            : 'bg-indigo-50 border-indigo-200 text-indigo-900'
-        }`}>
-          <div className="flex items-center gap-2 text-xs">
-            <ShieldCheck className="w-4 h-4 text-indigo-500 shrink-0" />
-            <div>
-              <p className="font-medium">Tài khoản Admin hệ thống (.env)</p>
-              <p className={`text-[11px] ${isDark ? 'text-indigo-300/80' : 'text-indigo-700'}`}>
-                systemadmin@gmail.com
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleFillAdmin}
-            className="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] font-medium transition-colors shrink-0"
-          >
-            Điền nhanh
-          </button>
-        </div>
-
         {/* Error / Success Alerts */}
         {errorMessage && (
           <div className="mb-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs">

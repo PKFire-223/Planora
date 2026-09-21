@@ -22,7 +22,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // Default seed or saved user
+    // Normal web authentication: only restore if user previously logged in
     const saved = localStorage.getItem('planora_user');
     if (saved) {
       try {
@@ -31,18 +31,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return null;
       }
     }
-    // Default logged in as admin for smooth preview or allow instant toggle
-    return {
-      id: 'user-admin-seed',
-      name: 'Quản Trị Viên (Admin)',
-      email: 'systemadmin@gmail.com',
-      role: 'admin',
-      createdAt: '2026-09-21'
-    };
+    return null;
   });
 
   const [token, setToken] = useState<string | null>(() => {
-    return localStorage.getItem('planora_auth_token') || 'pln_admin_session';
+    return localStorage.getItem('planora_auth_token') || null;
   });
 
   const [loading, setLoading] = useState(false);
