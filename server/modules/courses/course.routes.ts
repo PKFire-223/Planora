@@ -1,0 +1,86 @@
+import { Router, Request, Response } from 'express';
+import { memoryStore } from '../../config/db';
+import { ApiError } from '../../errors/apiError';
+
+export const courseRouter = Router();
+
+// GET all courses
+courseRouter.get('/', (req: Request, res: Response) => {
+  const { status } = req.query;
+  let list = memoryStore.courses;
+  if (status && typeof status === 'string') {
+    list = list.filter(c => c.status === status);
+  }
+  res.json({ success: true, data: list });
+});
+
+// GET single course
+courseRouter.get('/:id', (req: Request, res: Response) => {
+  const course = memoryStore.courses.find(c => c.id === req.params.id);
+  if (!course) {
+    throw ApiError.notFound('Không tìm thấy khoá học yêu cầu');
+  }
+  res.json({ success: true, data: course });
+});
+
+// POST create course
+courseRouter.post('/', (req: Request, res: Response) => {
+  const { title, code, instructor, description, color, totalLessons } = req.body;
+  if (!title || !code) {
+    throw ApiError.badRequest('Tiêu đề và mã khoá học là bắt buộc');
+  }
+
+  const newCourse = {
+    id: `course-${Date.now()}`,
+    title,
+    code: code.toUpperCase(),
+    instructor: instructor || 'Chưa phân công',
+    description: description || '',
+    status: 'not_started' as const,
+    color: color || 'rose',
+    progress: 0,
+    totalLessons: Number(totalLessons) || 10,
+    completedLessons: 0,
+    createdAt: new Date().toISOString().split('T')[0]
+  };
+
+  memoryStore.courses.unshift(newCourse);
+  res.status(201).json({ success: true, data: newCourse });
+});
+
+// PUT update course
+courseRouter.put('/:id', (req: Request, res: Response) => {
+  const idx = memoryStore.courses.findIndex(c => c.id === req.params.id);
+  if (idx === -1) {
+    throw ApiError.notFound('Khoá học không tồn tại để cập nhật');
+  }
+
+  const current = memoryStore.courses[idx];
+  const updated = {
+    ...current,
+    ...req.body,
+    id: current.id // prevent ID mutation
+  };
+
+  if (updated.totalLessons > 0) {
+    updated.progress = Math.min(100, Math.round((updated.completedLessons / updated.totalLessons) * 100));
+    if (updated.progress === 100) {
+      updated.status = 'completed';
+    } else if (updated.progress > 0) {
+      updated.status = 'in_progress';
+    }
+  }
+
+  memoryStore.courses[idx] = updated;
+  res.json({ success: true, data: updated });
+});
+
+// DELETE course
+courseRouter.delete('/:id', (req: Request, res: Response) => {
+  const initialLen = memoryStore.courses.length;
+  memoryStore.courses = memoryStore.courses.filter(c => c.id !== req.params.id);
+  if (memoryStore.courses.length === initialLen) {
+    throw ApiError.notFound('Không tìm thấy khoá học để xoá');
+  }
+  res.json({ success: true, message: 'Đã xoá khoá học thành công' });
+});
