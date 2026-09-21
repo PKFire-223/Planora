@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { CheckSquare, Plus, Trash2, Clock, Sparkles, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Clock, Sparkles } from 'lucide-react';
 import { Task, Course } from '../../types';
+import { useTheme } from '../../context/ThemeContext';
 
 interface TasksViewProps {
   tasks: Task[];
@@ -19,6 +20,7 @@ export function TasksView({
   onDeleteTask,
   onAiBreakdown
 }: TasksViewProps) {
+  const { isDark } = useTheme();
   const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'in_progress' | 'done'>('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [breakingDownId, setBreakingDownId] = useState<string | null>(null);
@@ -38,7 +40,11 @@ export function TasksView({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title) return;
-    await onCreateTask(form);
+    const selectedCourse = courses.find(c => c.id === form.courseId);
+    await onCreateTask({
+      ...form,
+      courseName: selectedCourse ? selectedCourse.code : undefined
+    });
     setIsModalOpen(false);
     setForm({
       title: '',
@@ -62,36 +68,42 @@ export function TasksView({
     <div className="space-y-6">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <div className={`inline-flex p-1 rounded-xl border text-xs font-medium ${
+          isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+        }`}>
           {(['all', 'todo', 'in_progress', 'done'] as const).map(st => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
                 statusFilter === st
-                  ? 'bg-neutral-800 text-white border border-neutral-700'
-                  : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                  ? isDark
+                    ? 'bg-neutral-800 text-white font-semibold shadow-xs'
+                    : 'bg-white text-indigo-700 font-semibold shadow-xs'
+                  : isDark ? 'text-neutral-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              {st === 'all' ? 'Tất Cả' : st === 'todo' ? 'Chưa Làm' : st === 'in_progress' ? 'Đang Làm' : 'Đã Xong'}
+              {st === 'all' ? 'Tất Cả' : st === 'todo' ? 'Chưa Làm' : st === 'in_progress' ? 'Đang Thực Hiện' : 'Đã Hoàn Thành'}
             </button>
           ))}
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors self-start sm:self-auto"
+          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Thêm Task Mới</span>
+          <span>Thêm Kế Hoạch / Task</span>
         </button>
       </div>
 
       {/* Task List */}
       <div className="space-y-3">
         {filteredTasks.length === 0 ? (
-          <div className="p-8 text-center text-neutral-400 bg-neutral-900/30 rounded-2xl border border-neutral-800 text-xs">
-            Không có nhiệm vụ nào trong mục này.
+          <div className={`p-8 text-center rounded-2xl border text-xs ${
+            isDark ? 'bg-neutral-900/30 border-neutral-800 text-neutral-400' : 'bg-white border-slate-200 text-slate-500 shadow-xs'
+          }`}>
+            Không có nhiệm vụ nào trong mục lọc này.
           </div>
         ) : (
           filteredTasks.map(task => (
@@ -99,39 +111,49 @@ export function TasksView({
               key={task.id}
               className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
                 task.status === 'done'
-                  ? 'bg-neutral-950/40 border-neutral-800/50 opacity-70'
-                  : 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700'
+                  ? isDark 
+                    ? 'bg-neutral-950/40 border-neutral-800/60 opacity-60' 
+                    : 'bg-slate-50 border-slate-200 opacity-60'
+                  : isDark
+                    ? 'bg-neutral-900/60 border-neutral-800 hover:border-neutral-700'
+                    : 'bg-white border-slate-200 shadow-xs hover:border-slate-300'
               }`}
             >
-              <div className="flex items-start gap-3 min-w-0">
+              <div className="flex items-start gap-3.5 min-w-0">
                 <input
                   type="checkbox"
                   checked={task.status === 'done'}
                   onChange={() => onToggleTask(task.id, task.status)}
-                  className="mt-0.5 w-4 h-4 rounded border-neutral-700 bg-neutral-950 text-rose-600 cursor-pointer"
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-0 cursor-pointer"
                 />
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-xs font-medium ${task.status === 'done' ? 'line-through text-neutral-500' : 'text-white'}`}>
+                    <span className={`text-xs font-medium ${
+                      task.status === 'done' 
+                        ? 'line-through text-slate-400 dark:text-neutral-500' 
+                        : isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
                       {task.title}
                     </span>
                     {task.isAiGenerated && (
-                      <span className="px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 font-mono text-[10px] flex items-center gap-1">
+                      <span className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 text-[10px] flex items-center gap-1 font-medium">
                         <Sparkles className="w-2.5 h-2.5" />
                         <span>AI Subtask</span>
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-3 mt-1.5 text-[11px] text-neutral-400">
+                  <div className={`flex items-center gap-3 mt-1.5 text-[11px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                     {task.courseName && (
-                      <span className="font-mono text-neutral-300 px-1.5 py-0.2 rounded bg-neutral-800">
+                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        isDark ? 'bg-neutral-800 text-neutral-300' : 'bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}>
                         {task.courseName}
                       </span>
                     )}
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-neutral-400" />
-                      <span>{task.dueDate} (~{task.estimatedMinutes}p)</span>
+                      <Clock className="w-3 h-3" />
+                      <span>Hạn: {task.dueDate} (~{task.estimatedMinutes} phút)</span>
                     </span>
                   </div>
                 </div>
@@ -143,27 +165,34 @@ export function TasksView({
                   <button
                     onClick={() => handleBreakdown(task)}
                     disabled={breakingDownId === task.id}
-                    className="px-2.5 py-1 rounded-md bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] flex items-center gap-1 transition-colors"
-                    title="Tự động chia nhỏ task thành 3 bước với AI"
+                    className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-colors cursor-pointer ${
+                      isDark
+                        ? 'bg-indigo-950/40 border-indigo-800 text-indigo-300 hover:bg-indigo-900/50'
+                        : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
+                    }`}
+                    title="Tự động chia nhỏ task thành các bước hành động cụ thể bằng AI"
                   >
-                    <Sparkles className="w-3 h-3 text-amber-400" />
+                    <Sparkles className="w-3 h-3 text-indigo-500" />
                     <span>{breakingDownId === task.id ? 'Đang chia...' : 'Chia nhỏ AI'}</span>
                   </button>
                 )}
 
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                   task.priority === 'urgent'
-                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300 border border-rose-200 dark:border-rose-500/30'
                     : task.priority === 'high'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                    : 'bg-neutral-800 text-neutral-400'
+                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-200 dark:border-amber-500/30'
+                    : 'bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-400 border border-slate-200 dark:border-transparent'
                 }`}>
-                  {task.priority.toUpperCase()}
+                  {task.priority === 'urgent' ? 'Khẩn cấp' : task.priority === 'high' ? 'Ưu tiên cao' : task.priority === 'medium' ? 'Bình thường' : 'Thấp'}
                 </span>
 
                 <button
                   onClick={() => onDeleteTask(task.id)}
-                  className="p-1.5 text-neutral-400 hover:text-rose-400 transition-colors"
+                  className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                    isDark ? 'text-neutral-400 hover:text-rose-400 hover:bg-neutral-800' : 'text-slate-400 hover:text-rose-600 hover:bg-slate-100'
+                  }`}
+                  title="Xoá task"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -175,30 +204,40 @@ export function TasksView({
 
       {/* Create Task Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-white mb-4">Tạo Bài Tập / Nhiệm Vụ Mới</h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl border transition-all ${
+            isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            <h3 className="text-base font-bold mb-4">Tạo Kế Hoạch / Nhiệm Vụ Mới</h3>
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-mono text-neutral-400 mb-1">Tên nhiệm vụ</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Tên nhiệm vụ / bài tập
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Làm bài tập Mongoose Schema"
+                  placeholder="Ví dụ: Ôn tập 10 câu hỏi thuật toán đồ thị"
                   value={form.title}
                   onChange={e => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-neutral-400 mb-1">Khoá học liên quan (tuỳ chọn)</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Môn học liên quan (tuỳ chọn)
+                </label>
                 <select
                   value={form.courseId}
                   onChange={e => setForm({ ...form, courseId: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 >
-                  <option value="">-- Không gắn môn học --</option>
+                  <option value="">-- Không chọn (Bài tập độc lập) --</option>
                   {courses.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.code} - {c.title}
@@ -209,39 +248,51 @@ export function TasksView({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-mono text-neutral-400 mb-1">Mức độ ưu tiên</label>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                    Mức độ ưu tiên
+                  </label>
                   <select
                     value={form.priority}
-                    onChange={e => setForm({ ...form, priority: e.target.value as any })}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
+                    onChange={e => setForm({ ...form, priority: e.target.value as Task['priority'] })}
+                    className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                      isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
                   >
-                    <option value="low">Thấp (Low)</option>
-                    <option value="medium">Bình thường (Medium)</option>
-                    <option value="high">Cao (High)</option>
-                    <option value="urgent">Khẩn cấp (Urgent)</option>
+                    <option value="low">Thấp</option>
+                    <option value="medium">Bình thường</option>
+                    <option value="high">Ưu tiên cao</option>
+                    <option value="urgent">Khẩn cấp</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-mono text-neutral-400 mb-1">Thời gian dự kiến (phút)</label>
+                  <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                    Thời gian dự kiến (phút)
+                  </label>
                   <input
                     type="number"
                     min="5"
                     step="5"
                     value={form.estimatedMinutes}
                     onChange={e => setForm({ ...form, estimatedMinutes: Number(e.target.value) })}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
+                    className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                      isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-neutral-400 mb-1">Hạn nộp (Due Date)</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Hạn hoàn thành (Deadline)
+                </label>
                 <input
                   type="date"
                   value={form.dueDate}
                   onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 />
               </div>
 
@@ -249,15 +300,17 @@ export function TasksView({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 rounded-lg"
+                  className={`px-3.5 py-2 text-xs rounded-xl cursor-pointer ${
+                    isDark ? 'text-neutral-300 hover:bg-neutral-800' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
                   Huỷ
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white rounded-lg"
+                  className="px-4 py-2 text-xs font-medium bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-xs cursor-pointer"
                 >
-                  Thêm Nhiệm Vụ
+                  Tạo Task
                 </button>
               </div>
             </form>

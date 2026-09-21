@@ -14,9 +14,6 @@ async function startServer() {
   app.use(cors());
   app.use(express.json());
 
-  // Connect Database (non-blocking)
-  await connectDatabase();
-
   // API Routes FIRST
   app.use('/api', apiRouter);
 
@@ -33,13 +30,15 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (_req, res) => {
+    app.get('*all', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Personal LMS Server] listening at http://0.0.0.0:${PORT}`);
+    // Non-blocking database connection attempt after port 3000 is open
+    connectDatabase().catch(() => {});
   });
 }
 

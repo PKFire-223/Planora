@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
+import { LandingPageView } from './features/landing/LandingPageView';
+import { AuthSplitView } from './features/auth/AuthSplitView';
 import { DashboardView } from './features/dashboard/DashboardView';
 import { CoursesView } from './features/courses/CoursesView';
 import { TasksView } from './features/tasks/TasksView';
@@ -11,8 +13,15 @@ import { ErrorReportsView } from './features/errorReports/ErrorReportsView';
 import { ProjectStructureView } from './features/structure/ProjectStructureView';
 import { api } from './services/api';
 import { Course, Task, Note, Goal, ErrorReport, ActiveTab } from './types';
+import { useTheme } from './context/ThemeContext';
 
 export default function App() {
+  const { isDark } = useTheme();
+
+  // Primary view navigation: 'landing' (first view), 'auth' (split-screen), 'app' (LMS workspace)
+  const [viewMode, setViewMode] = useState<'landing' | 'auth' | 'app'>('landing');
+  const [authTab, setAuthTab] = useState<'login' | 'register' | 'forgot'>('login');
+
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [courses, setCourses] = useState<Course[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -21,7 +30,7 @@ export default function App() {
   const [errors, setErrors] = useState<ErrorReport[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load initial data from backend API
+  // Load initial data from backend API with automatic fallback
   const loadData = async () => {
     try {
       const [coursesRes, tasksRes, notesRes, goalsRes, errorsRes] = await Promise.all([
@@ -32,13 +41,13 @@ export default function App() {
         api.getErrors()
       ]);
 
-      if (coursesRes.success) setCourses(coursesRes.data);
-      if (tasksRes.success) setTasks(tasksRes.data);
-      if (notesRes.success) setNotes(notesRes.data);
-      if (goalsRes.success) setGoals(goalsRes.data);
-      if (errorsRes.success) setErrors(errorsRes.data);
-    } catch (err) {
-      console.error('Error loading initial data from API:', err);
+      if (coursesRes?.success && coursesRes.data) setCourses(coursesRes.data);
+      if (tasksRes?.success && tasksRes.data) setTasks(tasksRes.data);
+      if (notesRes?.success && notesRes.data) setNotes(notesRes.data);
+      if (goalsRes?.success && goalsRes.data) setGoals(goalsRes.data);
+      if (errorsRes?.success && errorsRes.data) setErrors(errorsRes.data);
+    } catch {
+      // Fallbacks are safely applied inside api.ts
     } finally {
       setLoading(false);
     }
@@ -140,13 +149,43 @@ export default function App() {
 
   const openErrorCount = errors.filter(e => e.status !== 'resolved').length;
 
+  const handleOpenAuth = (tab: 'login' | 'register' | 'forgot' = 'login') => {
+    setAuthTab(tab);
+    setViewMode('auth');
+  };
+
+  // VIEW 1: Trang Giới Thiệu (Mở ra đầu tiên)
+  if (viewMode === 'landing') {
+    return (
+      <LandingPageView
+        onOpenAuth={handleOpenAuth}
+        onEnterApp={() => setViewMode('app')}
+      />
+    );
+  }
+
+  // VIEW 2: Trang Đăng Nhập & Đăng Ký Split-Screen (Không dùng Pop-up)
+  if (viewMode === 'auth') {
+    return (
+      <AuthSplitView
+        initialTab={authTab}
+        onBackToLanding={() => setViewMode('landing')}
+        onEnterApp={() => setViewMode('app')}
+      />
+    );
+  }
+
+  // VIEW 3: Không Gian Học Tập Planora LMS Workspace
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100 flex flex-row selection:bg-rose-500/20 selection:text-rose-200">
+    <div className={`min-h-screen flex flex-row transition-colors duration-200 ${
+      isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-slate-50 text-slate-900'
+    }`}>
       {/* Persistent Sidebar */}
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
         errorCount={openErrorCount}
+        onGoToLanding={() => setViewMode('landing')}
       />
 
       {/* Main Content Area */}
@@ -154,12 +193,16 @@ export default function App() {
         <Header
           activeTab={activeTab}
           onOpenAi={() => setActiveTab('ai')}
+          onGoToLanding={() => setViewMode('landing')}
+          onOpenAuth={(tab) => handleOpenAuth(tab)}
         />
 
         <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-64 text-neutral-400 text-xs font-mono">
-              Đang kết nối hệ thống LMS...
+            <div className={`flex items-center justify-center h-64 text-xs font-medium ${
+              isDark ? 'text-neutral-400' : 'text-slate-500'
+            }`}>
+              Đang kết nối hệ thống Planora LMS...
             </div>
           ) : (
             <>

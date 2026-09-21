@@ -5,6 +5,7 @@ import { noteRouter } from './modules/notes/note.routes';
 import { goalRouter } from './modules/goals/goal.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { errorRouter } from './modules/errors/errorLog.routes';
+import { authRouter } from './modules/auth/auth.routes';
 import { memoryStore, isMongoConnected } from './config/db';
 
 export const apiRouter = Router();
@@ -31,6 +32,7 @@ apiRouter.get('/health', (_req, res) => {
 });
 
 // Mount modules
+apiRouter.use('/auth', authRouter);
 apiRouter.use('/courses', courseRouter);
 apiRouter.use('/tasks', taskRouter);
 apiRouter.use('/notes', noteRouter);

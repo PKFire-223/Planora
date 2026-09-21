@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, Plus, Bug, ShieldAlert, Check } from 'lucide-react';
 import { ErrorReport } from '../../types';
+import { useTheme } from '../../context/ThemeContext';
 
 interface ErrorReportsViewProps {
   errors: ErrorReport[];
@@ -13,6 +14,7 @@ export function ErrorReportsView({
   onReportError,
   onResolveError
 }: ErrorReportsViewProps) {
+  const { isDark } = useTheme();
   const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('open');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
@@ -54,36 +56,44 @@ export function ErrorReportsView({
   return (
     <div className="space-y-6">
       {/* Information Banner */}
-      <div className="p-5 rounded-2xl bg-neutral-900/60 border border-neutral-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-colors ${
+        isDark 
+          ? 'bg-neutral-900/60 border-neutral-800 text-white' 
+          : 'bg-white border-slate-200 text-slate-900 shadow-xs'
+      }`}>
         <div>
-          <div className="flex items-center gap-2 text-rose-400 font-bold text-sm mb-1">
-            <ShieldAlert className="w-4 h-4" />
-            <span>Trung Tâm Báo Cáo & Sửa Lỗi (Error Management)</span>
+          <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400 font-bold text-sm mb-1">
+            <ShieldAlert className="w-4 h-4 shrink-0" />
+            <span>Trung Tâm Báo Cáo & Xử Lý Sự Cố (Error Tracker)</span>
           </div>
-          <p className="text-xs text-neutral-400 max-w-xl leading-relaxed">
-            Hệ thống ghi nhận ngoại lệ từ Backend API, lỗi Mongoose, và tiếp nhận phản hồi sự cố từ người dùng. Bạn có thể thêm báo cáo lỗi hoặc đánh dấu đã sửa xong (Resolved).
+          <p className={`text-xs max-w-xl leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
+            Ghi nhận các ngoại lệ hệ thống, lỗi kết nối cơ sở dữ liệu và tiếp nhận phản hồi từ người dùng. Bạn có thể ghi chép giải pháp khắc phục trực tiếp.
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="px-3.5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors shrink-0"
+          className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm shrink-0 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
-          <span>Báo Cáo Lỗi Mới</span>
+          <span>Báo Cáo Sự Cố Mới</span>
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-2">
+      <div className={`inline-flex p-1 rounded-xl border text-xs font-medium ${
+        isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+      }`}>
         {(['open', 'resolved', 'all'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
               filter === tab
-                ? 'bg-neutral-800 text-white border border-neutral-700'
-                : 'text-neutral-400 hover:text-white hover:bg-neutral-900'
+                ? isDark
+                  ? 'bg-neutral-800 text-white font-semibold shadow-xs'
+                  : 'bg-white text-indigo-700 font-semibold shadow-xs'
+                : isDark ? 'text-neutral-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             {tab === 'open' ? 'Đang Xử Lý' : tab === 'resolved' ? 'Đã Khắc Phục' : 'Tất Cả'}
@@ -94,7 +104,9 @@ export function ErrorReportsView({
       {/* Error Reports List */}
       <div className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="p-8 text-center text-neutral-400 bg-neutral-900/30 rounded-2xl border border-neutral-800 text-xs">
+          <div className={`p-8 text-center rounded-2xl border text-xs ${
+            isDark ? 'bg-neutral-900/30 border-neutral-800 text-neutral-400' : 'bg-white border-slate-200 text-slate-500 shadow-xs'
+          }`}>
             Không có báo cáo lỗi nào trong danh mục này.
           </div>
         ) : (
@@ -103,16 +115,20 @@ export function ErrorReportsView({
               key={err.id}
               className={`p-5 rounded-2xl border transition-all ${
                 err.status === 'resolved'
-                  ? 'bg-neutral-950/40 border-neutral-800/60 opacity-80'
-                  : 'bg-neutral-900/50 border-neutral-800'
+                  ? isDark 
+                    ? 'bg-neutral-950/40 border-neutral-800/60 opacity-80' 
+                    : 'bg-slate-50 border-slate-200 opacity-80'
+                  : isDark
+                    ? 'bg-neutral-900/50 border-neutral-800'
+                    : 'bg-white border-slate-200 shadow-xs hover:border-slate-300'
               }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                 <div className="flex items-start gap-3">
-                  <div className={`p-2 rounded-lg shrink-0 ${
+                  <div className={`p-2 rounded-xl shrink-0 ${
                     err.status === 'resolved'
-                      ? 'bg-emerald-500/10 text-emerald-400'
-                      : 'bg-rose-500/10 text-rose-400'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                      : 'bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400'
                   }`}>
                     {err.status === 'resolved' ? (
                       <CheckCircle2 className="w-4 h-4" />
@@ -121,21 +137,21 @@ export function ErrorReportsView({
                     )}
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                    <h4 className={`font-bold text-sm flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       <span>{err.title}</span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
                         err.severity === 'critical'
-                          ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                          ? 'bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300 border border-red-200 dark:border-red-500/30'
                           : err.severity === 'high'
-                          ? 'bg-rose-500/20 text-rose-300'
+                          ? 'bg-rose-100 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
                           : err.severity === 'medium'
-                          ? 'bg-amber-500/20 text-amber-300'
-                          : 'bg-neutral-800 text-neutral-400'
+                          ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300'
+                          : 'bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-400'
                       }`}>
-                        {err.severity.toUpperCase()}
+                        {err.severity === 'critical' ? 'Nghiêm trọng' : err.severity === 'high' ? 'Cao' : err.severity === 'medium' ? 'Trung bình' : 'Nhẹ'}
                       </span>
                     </h4>
-                    <div className="flex items-center gap-3 text-[11px] text-neutral-400 mt-1 font-mono">
+                    <div className={`flex items-center gap-3 text-[11px] mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
                       <span>Module: {err.componentName}</span>
                       <span>Thời gian: {new Date(err.reportedAt).toLocaleDateString()}</span>
                     </div>
@@ -146,59 +162,69 @@ export function ErrorReportsView({
                   {err.status !== 'resolved' && (
                     <button
                       onClick={() => setResolvingId(resolvingId === err.id ? null : err.id)}
-                      className="px-3 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                     >
                       <Check className="w-3.5 h-3.5" />
                       <span>Xác nhận đã sửa</span>
                     </button>
                   )}
-                  <span className={`text-xs px-2 py-0.5 rounded-md font-mono ${
+                  <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
                     err.status === 'resolved'
-                      ? 'text-emerald-400 bg-emerald-500/10'
-                      : 'text-amber-400 bg-amber-500/10'
+                      ? 'text-emerald-700 bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10'
+                      : 'text-amber-700 bg-amber-100 dark:text-amber-400 dark:bg-amber-500/10'
                   }`}>
-                    {err.status === 'resolved' ? 'Resolved' : 'Open'}
+                    {err.status === 'resolved' ? 'Đã khắc phục' : 'Đang xử lý'}
                   </span>
                 </div>
               </div>
 
               {/* Description */}
-              <p className="text-xs text-neutral-300 leading-relaxed pl-11 mb-2">
+              <p className={`text-xs leading-relaxed pl-11 mb-2 ${isDark ? 'text-neutral-300' : 'text-slate-600'}`}>
                 {err.description}
               </p>
 
               {/* Resolution Notes */}
               {err.resolutionNotes && (
-                <div className="ml-11 mt-2 p-2.5 rounded-lg bg-emerald-950/30 border border-emerald-500/20 text-xs text-emerald-300">
-                  <strong>Cách khắc phục:</strong> {err.resolutionNotes}
+                <div className={`ml-11 mt-2 p-3 rounded-xl border text-xs leading-relaxed ${
+                  isDark 
+                    ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300' 
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                }`}>
+                  <strong>Phương án xử lý:</strong> {err.resolutionNotes}
                 </div>
               )}
 
               {/* Expandable Resolution Form */}
               {resolvingId === err.id && (
-                <div className="ml-11 mt-3 p-3 rounded-xl bg-neutral-950 border border-neutral-800 space-y-2">
-                  <label className="block text-[11px] font-mono text-neutral-400">
-                    Ghi chú giải pháp (Mô tả bạn đã sửa lỗi này như thế nào):
+                <div className={`ml-11 mt-3 p-3.5 rounded-xl border space-y-2.5 ${
+                  isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
+                }`}>
+                  <label className={`block text-xs font-medium ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                    Ghi chú giải pháp (Mô tả cách thức sửa đổi và kiểm tra):
                   </label>
                   <input
                     type="text"
                     value={resolutionNote}
                     onChange={e => setResolutionNote(e.target.value)}
-                    placeholder="e.g. Đã bọc try-catch và bổ sung validate input ở controller..."
-                    className="w-full px-3 py-1.5 text-xs rounded-lg bg-neutral-900 border border-neutral-700 text-white"
+                    placeholder="Ví dụ: Đã bổ sung validate middleware và xử lý try-catch fallback..."
+                    className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500/50 ${
+                      isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-900'
+                    }`}
                   />
                   <div className="flex justify-end gap-2">
                     <button
                       onClick={() => setResolvingId(null)}
-                      className="px-2.5 py-1 text-xs text-neutral-400 hover:text-white"
+                      className={`px-3 py-1.5 text-xs rounded-lg cursor-pointer ${
+                        isDark ? 'text-neutral-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                      }`}
                     >
                       Huỷ
                     </button>
                     <button
                       onClick={() => handleResolveSubmit(err.id)}
-                      className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-md font-medium"
+                      className="px-3.5 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-medium cursor-pointer shadow-xs"
                     >
-                      Đánh Dấu Hoàn Tất
+                      Lưu Giải Pháp
                     </button>
                   </div>
                 </div>
@@ -210,57 +236,79 @@ export function ErrorReportsView({
 
       {/* Report Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-2xl">
-            <h3 className="text-base font-bold text-white mb-4">Gửi Báo Cáo Lỗi Mới</h3>
-            <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl p-6 shadow-2xl border transition-all ${
+            isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
+          }`}>
+            <h3 className="text-base font-bold mb-4">Báo Cáo Sự Cố / Bug Kỹ Thuật</h3>
+            <form onSubmit={handleSubmit} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-mono text-neutral-400 mb-1">Tiêu đề lỗi</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Tiêu đề sự cố
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Lỗi lưu ghi chú không cập nhật tag"
+                  placeholder="Ví dụ: MongoDB query timeout khi tải danh sách"
                   value={form.title}
                   onChange={e => setForm({ ...form, title: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-mono text-neutral-400 mb-1">Mức độ nghiêm trọng</label>
-                  <select
-                    value={form.severity}
-                    onChange={e => setForm({ ...form, severity: e.target.value as any })}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
-                  >
-                    <option value="low">Thấp (Low)</option>
-                    <option value="medium">Vừa (Medium)</option>
-                    <option value="high">Cao (High)</option>
-                    <option value="critical">Nghiêm trọng (Critical)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono text-neutral-400 mb-1">Vị trí / Module</label>
-                  <input
-                    type="text"
-                    value={form.componentName}
-                    onChange={e => setForm({ ...form, componentName: e.target.value })}
-                    className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white"
-                  />
-                </div>
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Phân vùng xảy ra lỗi (Module)
+                </label>
+                <select
+                  value={form.componentName}
+                  onChange={e => setForm({ ...form, componentName: e.target.value })}
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                >
+                  <option value="Backend/Auth">Backend/Auth (Đăng nhập & JWT)</option>
+                  <option value="Backend/Database">Backend/Database (MongoDB / Mongoose)</option>
+                  <option value="Backend/Courses">Backend/Courses API</option>
+                  <option value="Backend/Tasks">Backend/Tasks API</option>
+                  <option value="Backend/AI">Backend/AI Service</option>
+                  <option value="Frontend/UI">Frontend/Giao diện người dùng</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-xs font-mono text-neutral-400 mb-1">Mô tả chi tiết sự cố</label>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Mức độ nghiêm trọng
+                </label>
+                <select
+                  value={form.severity}
+                  onChange={e => setForm({ ...form, severity: e.target.value as ErrorReport['severity'] })}
+                  className={`w-full px-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
+                >
+                  <option value="low">Nhẹ (Low)</option>
+                  <option value="medium">Trung bình (Medium)</option>
+                  <option value="high">Cao (High)</option>
+                  <option value="critical">Nghiêm trọng (Critical)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-xs font-medium mb-1 ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Mô tả chi tiết & Các bước tái hiện lỗi
+                </label>
                 <textarea
                   rows={4}
                   required
-                  placeholder="Hành vi thực tế, các bước tái hiện, thông báo lỗi nếu có..."
+                  placeholder="Mô tả hành động dẫn đến lỗi và thông báo lỗi hiển thị..."
                   value={form.description}
                   onChange={e => setForm({ ...form, description: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg bg-neutral-950 border border-neutral-800 text-white resize-none"
+                  className={`w-full px-3 py-2 text-xs rounded-xl border resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                    isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                  }`}
                 />
               </div>
 
@@ -268,13 +316,15 @@ export function ErrorReportsView({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 text-xs text-neutral-300 hover:bg-neutral-800 rounded-lg"
+                  className={`px-3.5 py-2 text-xs rounded-xl cursor-pointer ${
+                    isDark ? 'text-neutral-300 hover:bg-neutral-800' : 'text-slate-600 hover:bg-slate-100'
+                  }`}
                 >
                   Huỷ
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white rounded-lg"
+                  className="px-4 py-2 text-xs font-medium bg-rose-600 hover:bg-rose-500 text-white rounded-xl shadow-xs cursor-pointer"
                 >
                   Gửi Báo Cáo
                 </button>

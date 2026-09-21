@@ -1,6 +1,6 @@
 {
-  "name": "Personal LMS",
-  "description": "Nền tảng quản lý học tập cá nhân (Personal LMS) Full-Stack với React, Node.js Express, MongoDB và AI Study Assistant.",
+  "name": "Planora",
+  "description": "Planora - Nền tảng quản lý kế hoạch & học tập thông minh với chế độ sáng tối, xác thực tài khoản và trợ lý AI.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

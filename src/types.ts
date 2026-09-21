@@ -55,6 +55,16 @@ export interface ErrorReport {
   resolutionNotes?: string;
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'student';
+  createdAt: string;
+}
+
+export type ThemeMode = 'light' | 'dark';
+
 export type ActiveTab = 
   | 'dashboard'
   | 'courses'

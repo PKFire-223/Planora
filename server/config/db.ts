@@ -27,20 +27,22 @@ export let isMongoConnected = false;
 export async function connectDatabase() {
   const uri = process.env.MONGODB_URI;
 
-  if (!uri) {
-    console.log('[Database] MONGODB_URI not set. Operating in resilient In-Memory Mock Store mode.');
+  // In cloud sandbox container or when local MongoDB is not configured:
+  if (!uri || uri.includes('localhost') || uri.includes('127.0.0.1')) {
+    console.log('[Database] Operating with resilient In-Memory Store.');
+    isMongoConnected = false;
     return;
   }
 
   try {
     mongoose.set('bufferCommands', false);
     await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 2000,
+      serverSelectionTimeoutMS: 1000,
     });
     isMongoConnected = true;
-    console.log('[Database] Connected to MongoDB successfully.');
-  } catch (error) {
-    console.warn('[Database] MongoDB connection failed or offline. Seamlessly utilizing In-Memory Fallback Store.');
+    console.log('[Database] Connected to remote MongoDB successfully.');
+  } catch {
+    console.log('[Database] Operating with resilient In-Memory Store.');
     isMongoConnected = false;
   }
 }
