@@ -42,7 +42,22 @@ export default function App() {
       return FALLBACK_NOTIFICATIONS;
     }
   });
+  const [crossContext, setCrossContext] = useState<{
+    courseId?: string;
+    courseCode?: string;
+    aiPrompt?: string;
+  }>({});
   const [loading, setLoading] = useState(true);
+
+  const handleNavigateWithContext = (
+    tab: ActiveTab,
+    context?: { courseId?: string; courseCode?: string; aiPrompt?: string }
+  ) => {
+    if (context) {
+      setCrossContext(context);
+    }
+    setActiveTab(tab);
+  };
 
   // Persist notifications on change
   useEffect(() => {
@@ -279,12 +294,17 @@ export default function App() {
                   onCreateCourse={handleCreateCourse}
                   onUpdateCourse={handleUpdateCourse}
                   onDeleteCourse={handleDeleteCourse}
+                  onNavigateToTab={handleNavigateWithContext}
                 />
               )}
 
               {activeTab === 'timetable' && (
                 <TimetableView
+                  courses={courses}
+                  onUpdateCourse={handleUpdateCourse}
                   onNavigateToCourses={() => setActiveTab('courses')}
+                  onNavigateToTab={handleNavigateWithContext}
+                  initialHighlightCourseId={crossContext.courseId}
                 />
               )}
 
@@ -296,6 +316,7 @@ export default function App() {
                   onToggleTask={handleToggleTask}
                   onDeleteTask={handleDeleteTask}
                   onAiBreakdown={handleAiBreakdown}
+                  initialCourseId={crossContext.courseId}
                 />
               )}
 
@@ -304,6 +325,7 @@ export default function App() {
                   notes={notes}
                   onCreateNote={handleCreateNote}
                   onDeleteNote={handleDeleteNote}
+                  initialSearchTerm={crossContext.courseCode}
                 />
               )}
 
@@ -315,7 +337,7 @@ export default function App() {
               )}
 
               {activeTab === 'ai' && (
-                <AiAssistantView />
+                <AiAssistantView initialPrompt={crossContext.aiPrompt} />
               )}
 
               {activeTab === 'errors' && (

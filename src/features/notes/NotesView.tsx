@@ -7,11 +7,12 @@ interface NotesViewProps {
   notes: Note[];
   onCreateNote: (data: Partial<Note>) => Promise<void>;
   onDeleteNote: (id: string) => Promise<void>;
+  initialSearchTerm?: string;
 }
 
-export function NotesView({ notes, onCreateNote, onDeleteNote }: NotesViewProps) {
+export function NotesView({ notes, onCreateNote, onDeleteNote, initialSearchTerm = '' }: NotesViewProps) {
   const { isDark } = useTheme();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState({
     title: '',

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bot, Send, Sparkles, Lightbulb, CheckCircle2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { useTheme } from '../../context/ThemeContext';
@@ -11,7 +11,11 @@ interface Message {
   time: string;
 }
 
-export function AiAssistantView() {
+interface AiAssistantViewProps {
+  initialPrompt?: string;
+}
+
+export function AiAssistantView({ initialPrompt }: AiAssistantViewProps) {
   const { isDark } = useTheme();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -22,8 +26,15 @@ export function AiAssistantView() {
       time: 'Vừa xong'
     }
   ]);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState(initialPrompt || '');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialPrompt && initialPrompt.trim()) {
+      setInput(initialPrompt);
+      handleSend(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   const sampleQuestions = [
     'Thiết kế Mongoose Schema chuẩn cho khoá học & bài tập',

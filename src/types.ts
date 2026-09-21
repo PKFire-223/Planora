@@ -1,3 +1,30 @@
+export interface CourseLesson {
+  id: string;
+  title: string;
+  completed: boolean;
+  duration?: string;
+}
+
+export interface CourseMaterial {
+  id: string;
+  name: string;
+  type: 'slide' | 'pdf' | 'link' | 'code';
+  url?: string;
+  size?: string;
+}
+
+export interface CourseSyllabusWeek {
+  week: number;
+  title: string;
+  desc?: string;
+  completed?: boolean;
+}
+
+export interface CourseEvaluationWeight {
+  label: string;
+  weight: number;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -10,6 +37,16 @@ export interface Course {
   totalLessons: number;
   completedLessons: number;
   createdAt: string;
+  credits?: number; // Số tín chỉ (ví dụ: 3)
+  semester?: string; // Ví dụ: "Học kỳ 1 - 2026-2027"
+  schedule?: string; // Ví dụ: "Thứ 3 (Tiết 1-3)"
+  room?: string; // Ví dụ: "Phòng B2.10" hoặc "Online qua LMS"
+  targetGrade?: string; // Ví dụ: "A", "A+", "B+"
+  currentGrade?: number | string; // Điểm quá trình tích lũy
+  evaluationWeights?: CourseEvaluationWeight[]; // Trọng số đánh giá
+  syllabus?: CourseSyllabusWeek[];
+  lessons?: CourseLesson[];
+  materials?: CourseMaterial[];
 }
 
 export interface Task {
@@ -85,10 +122,13 @@ export type DaySession = 'morning' | 'afternoon';
 
 export interface TimetableEntry {
   id: string;
-  name: string; // Tên môn / nội dung tự do nhập
+  courseId?: string; // ID môn học liên kết từ danh sách Course
+  courseCode?: string; // Mã môn học (VD: ARC-301, DSA-202)
+  name: string; // Tên môn / nội dung
   time: string; // Giờ học (VD: 07:00 - 09:15)
-  room?: string; // Tự do nhập gì cũng được, không ép buộc
+  room?: string; // Phòng học
   instructor?: string; // Giảng viên / người hướng dẫn (tuỳ chọn)
+  credits?: number; // Số tín chỉ môn học
   notes?: string; // Ghi chú thêm
   color: 'indigo' | 'sky' | 'emerald' | 'amber' | 'rose' | 'purple' | 'teal';
   day?: DayOfWeek; // Thứ trong tuần nếu đã xếp lịch

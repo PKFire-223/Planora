@@ -25,7 +25,25 @@ courseRouter.get('/:id', (req: Request, res: Response) => {
 
 // POST create course
 courseRouter.post('/', (req: Request, res: Response) => {
-  const { title, code, instructor, description, color, totalLessons } = req.body;
+  const {
+    title,
+    code,
+    instructor,
+    description,
+    color,
+    totalLessons,
+    credits,
+    semester,
+    schedule,
+    room,
+    targetGrade,
+    currentGrade,
+    evaluationWeights,
+    syllabus,
+    lessons,
+    materials
+  } = req.body;
+
   if (!title || !code) {
     throw ApiError.badRequest('Tiêu đề và mã khoá học là bắt buộc');
   }
@@ -37,11 +55,25 @@ courseRouter.post('/', (req: Request, res: Response) => {
     instructor: instructor || 'Chưa phân công',
     description: description || '',
     status: 'not_started' as const,
-    color: color || 'rose',
+    color: color || 'indigo',
     progress: 0,
-    totalLessons: Number(totalLessons) || 10,
+    totalLessons: Number(totalLessons) || 12,
     completedLessons: 0,
-    createdAt: new Date().toISOString().split('T')[0]
+    createdAt: new Date().toISOString().split('T')[0],
+    credits: Number(credits) || 3,
+    semester: semester || 'Học kỳ 1 - 2026-2027',
+    schedule: schedule || '',
+    room: room || '',
+    targetGrade: targetGrade || 'A',
+    currentGrade: currentGrade ?? undefined,
+    evaluationWeights: evaluationWeights || [
+      { label: 'Chuyên cần', weight: 20 },
+      { label: 'Giữa kỳ', weight: 30 },
+      { label: 'Cuối kỳ', weight: 50 }
+    ],
+    syllabus: syllabus || [],
+    lessons: lessons || [],
+    materials: materials || []
   };
 
   memoryStore.courses.unshift(newCourse);

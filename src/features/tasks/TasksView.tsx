@@ -10,6 +10,7 @@ interface TasksViewProps {
   onToggleTask: (id: string, currentStatus: Task['status']) => Promise<void>;
   onDeleteTask: (id: string) => Promise<void>;
   onAiBreakdown: (taskTitle: string, courseId?: string) => Promise<void>;
+  initialCourseId?: string;
 }
 
 export function TasksView({
@@ -18,24 +19,28 @@ export function TasksView({
   onCreateTask,
   onToggleTask,
   onDeleteTask,
-  onAiBreakdown
+  onAiBreakdown,
+  initialCourseId = 'all'
 }: TasksViewProps) {
   const { isDark } = useTheme();
   const [statusFilter, setStatusFilter] = useState<'all' | 'todo' | 'in_progress' | 'done'>('all');
+  const [courseFilter, setCourseFilter] = useState<string>(initialCourseId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [breakingDownId, setBreakingDownId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: '',
-    courseId: '',
+    courseId: initialCourseId !== 'all' ? initialCourseId : '',
     priority: 'medium' as Task['priority'],
     dueDate: new Date().toISOString().split('T')[0],
     estimatedMinutes: 45
   });
 
-  const filteredTasks = statusFilter === 'all'
-    ? tasks
-    : tasks.filter(t => t.status === statusFilter);
+  const filteredTasks = tasks.filter(t => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (courseFilter !== 'all' && t.courseId !== courseFilter) return false;
+    return true;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,24 +73,39 @@ export function TasksView({
     <div className="space-y-6">
       {/* Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className={`inline-flex p-1 rounded-xl border text-xs font-medium ${
-          isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
-        }`}>
-          {(['all', 'todo', 'in_progress', 'done'] as const).map(st => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
-                statusFilter === st
-                  ? isDark
-                    ? 'bg-neutral-800 text-white font-semibold shadow-xs'
-                    : 'bg-white text-indigo-700 font-semibold shadow-xs'
-                  : isDark ? 'text-neutral-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              {st === 'all' ? 'Tất Cả' : st === 'todo' ? 'Chưa Làm' : st === 'in_progress' ? 'Đang Thực Hiện' : 'Đã Hoàn Thành'}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className={`inline-flex p-1 rounded-xl border text-xs font-medium ${
+            isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
+          }`}>
+            {(['all', 'todo', 'in_progress', 'done'] as const).map(st => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  statusFilter === st
+                    ? isDark
+                      ? 'bg-neutral-800 text-white font-semibold shadow-xs'
+                      : 'bg-white text-indigo-700 font-semibold shadow-xs'
+                    : isDark ? 'text-neutral-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                {st === 'all' ? 'Tất Cả' : st === 'todo' ? 'Chưa Làm' : st === 'in_progress' ? 'Đang Thực Hiện' : 'Đã Hoàn Thành'}
+              </button>
+            ))}
+          </div>
+
+          <select
+            value={courseFilter}
+            onChange={e => setCourseFilter(e.target.value)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-xl border focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+              isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-700'
+            }`}
+          >
+            <option value="all">Tất cả môn học</option>
+            {courses.map(c => (
+              <option key={c.id} value={c.id}>Môn: {c.code} - {c.title}</option>
+            ))}
+          </select>
         </div>
 
         <button

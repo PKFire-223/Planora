@@ -179,11 +179,25 @@ export const api = {
           instructor: data.instructor || 'Giảng viên',
           description: data.description || '',
           status: data.status || 'not_started',
-          color: data.color || 'rose',
-          progress: 0,
-          totalLessons: data.totalLessons || 20,
-          completedLessons: 0,
-          createdAt: new Date().toISOString().split('T')[0]
+          color: data.color || 'indigo',
+          progress: data.progress || 0,
+          totalLessons: data.totalLessons || 12,
+          completedLessons: data.completedLessons || 0,
+          createdAt: new Date().toISOString().split('T')[0],
+          credits: data.credits || 3,
+          semester: data.semester || 'Học kỳ 1 - 2026-2027',
+          schedule: data.schedule || '',
+          room: data.room || '',
+          targetGrade: data.targetGrade || 'A',
+          currentGrade: data.currentGrade,
+          evaluationWeights: data.evaluationWeights || [
+            { label: 'Chuyên cần', weight: 20 },
+            { label: 'Giữa kỳ', weight: 30 },
+            { label: 'Cuối kỳ', weight: 50 }
+          ],
+          syllabus: data.syllabus || [],
+          lessons: data.lessons || [],
+          materials: data.materials || []
         };
         localCourses.unshift(newCourse);
         return { success: true, data: newCourse };

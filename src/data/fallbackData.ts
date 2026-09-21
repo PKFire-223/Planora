@@ -12,7 +12,42 @@ export const FALLBACK_COURSES: Course[] = [
     progress: 68,
     totalLessons: 24,
     completedLessons: 16,
-    createdAt: '2026-08-15'
+    createdAt: '2026-08-15',
+    credits: 3,
+    semester: 'Học kỳ 1 - 2026-2027',
+    schedule: 'Thứ 2 (07:30 - 09:30)',
+    room: 'Phòng B1-405',
+    targetGrade: 'A',
+    currentGrade: 8.5,
+    evaluationWeights: [
+      { label: 'Chuyên cần & Lab', weight: 20 },
+      { label: 'Đồ án giữa kỳ', weight: 30 },
+      { label: 'Bảo vệ cuối kỳ', weight: 50 }
+    ],
+    syllabus: [
+      { week: 1, title: 'Tổng quan Clean Architecture & Monolith vs Microservices', completed: true },
+      { week: 2, title: 'Domain-Driven Design (DDD) & Bounded Contexts', completed: true },
+      { week: 3, title: 'Event-Driven Architecture với Kafka / RabbitMQ', completed: true },
+      { week: 4, title: 'API Gateway & Service Mesh patterns', completed: true },
+      { week: 5, title: 'Distributed Tracing & Centralized Logging', completed: false },
+      { week: 6, title: 'Triển khai Docker Compose & Kubernetes Cluster', completed: false }
+    ],
+    lessons: [
+      { id: 'l1', title: 'Bài 01: Giới thiệu hệ thống phân tán', completed: true, duration: '45 phút' },
+      { id: 'l2', title: 'Bài 02: Tách service theo nghiệp vụ', completed: true, duration: '60 phút' },
+      { id: 'l3', title: 'Bài 03: REST vs gRPC trong giao tiếp liên service', completed: true, duration: '50 phút' },
+      { id: 'l4', title: 'Bài 04: Cấu hình Mongoose & Transactions', completed: true, duration: '65 phút' },
+      { id: 'l5', title: 'Bài 05: Authentication với JWT & OAuth2 Server', completed: true, duration: '55 phút' },
+      { id: 'l6', title: 'Bài 06: Circuit Breaker pattern với Opossum', completed: true, duration: '40 phút' },
+      { id: 'l7', title: 'Bài 07: Thực hành Lab 1: Microservices Docker Compose', completed: true, duration: '90 phút' },
+      { id: 'l8', title: 'Bài 08: Thiết kế Schema MongoDB hiệu năng cao', completed: false, duration: '50 phút' }
+    ],
+    materials: [
+      { id: 'm1', name: 'Slide_Tuan_01_Architecture_Overview.pdf', type: 'slide', size: '4.2 MB' },
+      { id: 'm2', name: 'Microservices_Lab_Starter_Code.zip', type: 'code', size: '12.8 MB' },
+      { id: 'm3', name: 'Giao_trinh_Clean_Architecture_VN.pdf', type: 'pdf', size: '8.5 MB' },
+      { id: 'm4', name: 'Link Github Repository đồ án mẫu', type: 'link', url: 'https://github.com/planora/microservices-sample' }
+    ]
   },
   {
     id: 'course-2',
@@ -25,7 +60,38 @@ export const FALLBACK_COURSES: Course[] = [
     progress: 45,
     totalLessons: 30,
     completedLessons: 14,
-    createdAt: '2026-08-20'
+    createdAt: '2026-08-20',
+    credits: 4,
+    semester: 'Học kỳ 1 - 2026-2027',
+    schedule: 'Thứ 4 (13:30 - 16:00)',
+    room: 'Phòng C3.02 (Lab Máy Tính)',
+    targetGrade: 'A+',
+    currentGrade: 9.0,
+    evaluationWeights: [
+      { label: 'Bài tập tuần / LeetCode', weight: 25 },
+      { label: 'Kiểm tra giữa kỳ', weight: 35 },
+      { label: 'Thi kết thúc môn (Offline)', weight: 40 }
+    ],
+    syllabus: [
+      { week: 1, title: 'Độ phức tạp thuật toán (Big-O, Master Theorem)', completed: true },
+      { week: 2, title: 'Cấu trúc cây cân bằng (AVL, Red-Black Tree, Segment Tree)', completed: true },
+      { week: 3, title: 'Thuật toán đồ thị nâng cao (Dijkstra, Bellman-Ford, Tarjan)', completed: true },
+      { week: 4, title: 'Quy hoạch động 1D và 2D, Bitmask DP', completed: false },
+      { week: 5, title: 'Kỹ thuật String Matching (KMP, Trie, Suffix Tree)', completed: false }
+    ],
+    lessons: [
+      { id: 'd1', title: 'Bài 01: Ôn tập Cây nhị phân và Cây tìm kiếm BST', completed: true, duration: '60 phút' },
+      { id: 'd2', title: 'Bài 02: Cài đặt cây Segment Tree với Lazy Propagation', completed: true, duration: '75 phút' },
+      { id: 'd3', title: 'Bài 03: Tìm đường đi ngắn nhất đồ thị có trọng số âm', completed: true, duration: '50 phút' },
+      { id: 'd4', title: 'Bài 04: Giải bài toán Ba lô và biến thể với DP', completed: true, duration: '60 phút' },
+      { id: 'd5', title: 'Bài 05: DP trên cây (Tree DP) ứng dụng thực tế', completed: false, duration: '70 phút' },
+      { id: 'd6', title: 'Bài 06: Trie & Bài toán tự động gợi ý từ khóa', completed: false, duration: '45 phút' }
+    ],
+    materials: [
+      { id: 'dm1', name: 'Slide_Graph_Algorithms_DeepDive.pdf', type: 'slide', size: '5.1 MB' },
+      { id: 'dm2', name: 'Tong_hop_100_bai_LeetCode_Medium_Hard.pdf', type: 'pdf', size: '3.4 MB' },
+      { id: 'dm3', name: 'LeetCode Contest Platform Guide', type: 'link', url: 'https://leetcode.com' }
+    ]
   },
   {
     id: 'course-3',
@@ -38,7 +104,72 @@ export const FALLBACK_COURSES: Course[] = [
     progress: 100,
     totalLessons: 18,
     completedLessons: 18,
-    createdAt: '2026-07-10'
+    createdAt: '2026-07-10',
+    credits: 3,
+    semester: 'Học kỳ Hè 2026',
+    schedule: 'Thứ 6 (08:00 - 11:15)',
+    room: 'Online qua LMS / Google Meet',
+    targetGrade: 'A',
+    currentGrade: 9.5,
+    evaluationWeights: [
+      { label: 'Chuyên cần & Thực hành', weight: 20 },
+      { label: 'Đồ án cá nhân', weight: 40 },
+      { label: 'Bảo vệ đồ án tốt nghiệp môn', weight: 40 }
+    ],
+    syllabus: [
+      { week: 1, title: 'React 19 Core & React Compiler nguyên lý', completed: true },
+      { week: 2, title: 'Server Components và Streaming SSR', completed: true },
+      { week: 3, title: 'State Management & Custom Hooks chuyên sâu', completed: true },
+      { week: 4, title: 'Build và Deploy tối ưu trên Cloud Run', completed: true }
+    ],
+    lessons: [
+      { id: 'f1', title: 'Bài 01: Kiến trúc React 19 mới', completed: true, duration: '40 phút' },
+      { id: 'f2', title: 'Bài 02: useActionState & useOptimistic', completed: true, duration: '50 phút' },
+      { id: 'f3', title: 'Bài 03: Tối ưu Bundle với code-splitting', completed: true, duration: '60 phút' }
+    ],
+    materials: [
+      { id: 'fm1', name: 'React19_Cheatsheet_Production.pdf', type: 'pdf', size: '2.8 MB' },
+      { id: 'fm2', name: 'Tailwind_v4_Design_System.pdf', type: 'slide', size: '6.4 MB' }
+    ]
+  },
+  {
+    id: 'course-4',
+    title: 'Học Máy và Trí Tuệ Nhân Tạo Ứng Dụng',
+    code: 'AI-401',
+    instructor: 'PGS. TS. Hoàng Minh D',
+    description: 'Nghiên cứu mạng nơ-ron sâu, mô hình Transformer, Fine-tuning LLM và tích hợp Gemini API vào ứng dụng.',
+    status: 'in_progress',
+    color: 'indigo',
+    progress: 40,
+    totalLessons: 20,
+    completedLessons: 8,
+    createdAt: '2026-08-25',
+    credits: 3,
+    semester: 'Học kỳ 1 - 2026-2027',
+    schedule: 'Thứ 5 (09:45 - 12:00)',
+    room: 'Phòng A2-302',
+    targetGrade: 'A',
+    currentGrade: 8.8,
+    evaluationWeights: [
+      { label: 'Bài tập Lab thực hành', weight: 30 },
+      { label: 'Kiểm tra giữa kỳ', weight: 20 },
+      { label: 'Đồ án AI Capstone', weight: 50 }
+    ],
+    syllabus: [
+      { week: 1, title: 'Giới thiệu Machine Learning & Deep Learning cơ bản', completed: true },
+      { week: 2, title: 'Kiến trúc Convolutional Neural Networks (CNN)', completed: true },
+      { week: 3, title: 'Cơ chế Attention & Transformer Architecture', completed: false },
+      { week: 4, title: 'Prompt Engineering & Fine-tuning LLM với LoRA', completed: false }
+    ],
+    lessons: [
+      { id: 'ai1', title: 'Bài 01: PyTorch cơ bản & Tensors', completed: true, duration: '60 phút' },
+      { id: 'ai2', title: 'Bài 02: Xây dựng mạng nơ-ron phân loại ảnh', completed: true, duration: '75 phút' },
+      { id: 'ai3', title: 'Bài 03: Cài đặt Self-Attention từ đầu', completed: false, duration: '90 phút' }
+    ],
+    materials: [
+      { id: 'aim1', name: 'Slide_Deep_Learning_Intro.pdf', type: 'slide', size: '7.2 MB' },
+      { id: 'aim2', name: 'Jupyter_Notebook_Lab_PyTorch.ipynb', type: 'code', size: '1.5 MB' }
+    ]
   }
 ];
 
@@ -199,92 +330,86 @@ export const FALLBACK_NOTIFICATIONS = [
 export const FALLBACK_TIMETABLE: import('../types').TimetableEntry[] = [
   {
     id: 'tt-1',
+    courseId: 'course-1',
+    courseCode: 'ARC-301',
     name: 'Kiến Trúc Microservices & Node.js',
-    time: '07:00 - 09:15',
-    room: 'Lab A2-302',
-    instructor: 'TS. Nguyễn Văn Toàn',
+    time: '07:30 - 09:30',
+    room: 'Phòng B1-405',
+    instructor: 'TS. Nguyễn Văn A',
+    credits: 3,
     notes: 'Thực hành kết nối Docker & Redis',
-    color: 'indigo',
+    color: 'rose',
     day: 'mon',
     session: 'morning'
   },
   {
     id: 'tt-2',
-    name: 'Lập Trình Web React 19',
-    time: '09:30 - 11:45',
-    room: 'B1-405',
-    instructor: 'ThS. Trần Minh Đức',
-    notes: 'Kiểm tra đồ án giữa kỳ',
-    color: 'sky',
-    day: 'mon',
-    session: 'morning'
+    courseId: 'course-2',
+    courseCode: 'DSA-202',
+    name: 'Cấu Trúc Dữ Liệu & Giải Thuật Nâng Cao',
+    time: '13:30 - 16:00',
+    room: 'Phòng C3.02 (Lab Máy Tính)',
+    instructor: 'ThS. Trần Thị B',
+    credits: 4,
+    notes: 'Luyện tập giải thuật đồ thị & LeetCode',
+    color: 'amber',
+    day: 'wed',
+    session: 'afternoon'
   },
   {
     id: 'tt-3',
-    name: 'Hệ Quản Trị Cơ Sở Dữ Liệu',
-    time: '13:30 - 16:00',
-    room: 'Lab C4-101',
-    instructor: 'TS. Lê Hoàng Mai',
-    notes: 'Tối ưu chỉ mục và Transaction',
-    color: 'emerald',
-    day: 'tue',
-    session: 'afternoon'
-  },
-  {
-    id: 'tt-4',
-    name: 'Trí Tuệ Nhân Tạo & Machine Learning',
-    time: '07:30 - 10:30',
-    room: 'Hội trường H1',
-    instructor: 'PGS. Vũ Đình Trí',
+    courseId: 'course-4',
+    courseCode: 'AI-401',
+    name: 'Học Máy và Trí Tuệ Nhân Tạo Ứng Dụng',
+    time: '09:45 - 12:00',
+    room: 'Phòng A2-302',
+    instructor: 'PGS. TS. Hoàng Minh D',
+    credits: 3,
     notes: 'Học mô hình Transformer & LLM',
-    color: 'purple',
-    day: 'wed',
+    color: 'indigo',
+    day: 'thu',
     session: 'morning'
   },
   {
-    id: 'tt-5',
-    name: 'An Ninh Mạng & Mật Mã Học',
-    time: '13:15 - 16:30',
-    room: 'Lab An Ninh Mạng',
-    instructor: 'ThS. Đặng Hữu Phong',
-    color: 'amber',
-    day: 'thu',
-    session: 'afternoon'
-  },
-  {
-    id: 'tt-6',
-    name: 'Toán Rời Rạc & Lý Thuyết Đồ Thị',
-    time: '07:30 - 09:45',
-    room: 'P204',
-    color: 'rose',
+    id: 'tt-4',
+    courseId: 'course-3',
+    courseCode: 'FE-101',
+    name: 'Phát Triển Ứng Dụng Web Hiện Đại với React 19',
+    time: '08:00 - 11:15',
+    room: 'Online qua LMS / Google Meet',
+    instructor: 'Lê Hoàng C',
+    credits: 3,
+    notes: 'Server Components & State Management',
+    color: 'emerald',
     day: 'fri',
     session: 'morning'
   },
   {
-    id: 'tt-7',
+    id: 'tt-5',
     name: 'Tự học thư viện & Luyện thuật toán',
     time: '14:00 - 16:30',
-    room: '', // Tự do để trống phòng
+    room: 'Thư viện Tầng 3',
     notes: 'Luyện 3 bài LeetCode Medium',
-    color: 'teal'
-    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+    color: 'teal',
+    day: 'tue',
+    session: 'afternoon'
   },
   {
-    id: 'tt-8',
+    id: 'tt-6',
     name: 'Seminar Công Nghệ Cloud & DevOps',
     time: '09:00 - 11:30',
     room: 'Online Zoom',
     notes: 'Hội thảo trực tuyến với diễn giả',
-    color: 'indigo'
-    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+    color: 'sky'
+    // Chưa xếp lịch (xuất hiện ở kho môn bên trái)
   },
   {
-    id: 'tt-9',
+    id: 'tt-7',
     name: 'Sinh Hoạt Nhóm Đồ Án Tốt Nghiệp',
     time: '15:00 - 17:00',
     room: 'Căn tin tầng 2',
-    color: 'emerald'
-    // Chưa xếp lịch (xuất hiện ở danh sách bên trái)
+    color: 'purple'
+    // Chưa xếp lịch (xuất hiện ở kho môn bên trái)
   }
 ];
 
