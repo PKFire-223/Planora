@@ -656,13 +656,20 @@ export const api = {
   },
 
   // AI Assistant
-  async askAi(question: string, context?: string): Promise<{ success: boolean; answer: string; source?: string }> {
+  async askAi(
+    question: string,
+    options?: string | { context?: string; persona?: string; userContext?: string }
+  ): Promise<{ success: boolean; answer: string; source?: string; model?: string }> {
+    const context = typeof options === 'string' ? options : options?.context;
+    const persona = typeof options === 'object' ? options.persona : undefined;
+    const userContext = typeof options === 'object' ? options.userContext : undefined;
+
     return request(
       '/api/ai/ask',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, context })
+        body: JSON.stringify({ question, context, persona, userContext })
       },
       () => ({
         success: true,

@@ -786,7 +786,15 @@ function PlanoraWorkspace() {
                 )}
 
                 {activeTab === 'ai' && (
-                  <AiAssistantView initialPrompt={crossContext.aiPrompt} />
+                  <AiAssistantView
+                    initialPrompt={crossContext.aiPrompt}
+                    courses={courses}
+                    tasks={tasks}
+                    goals={goals}
+                    notes={notes}
+                    onCreateTask={handleCreateTask}
+                    onCreateNote={handleCreateNote}
+                  />
                 )}
 
                 {activeTab === 'errors' && (
