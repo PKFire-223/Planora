@@ -1,7 +1,8 @@
-import { Sparkles, Sun, Moon, LogIn, Menu } from 'lucide-react';
+import { Sparkles, Sun, Moon, LogIn, Menu, Languages, Settings as SettingsIcon } from 'lucide-react';
 import { ActiveTab, NotificationItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { UserMenu } from './UserMenu';
 import { NotificationPopover } from './NotificationPopover';
 
@@ -32,59 +33,14 @@ export function Header({
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
 
-  const titles: Record<ActiveTab, { title: string; subtitle: string }> = {
-    dashboard: {
-      title: 'Bảng Điều Khiển Tổng Quan',
-      subtitle: 'Theo dõi tiến độ học tập, bài tập cần xử lý và mục tiêu cá nhân.'
-    },
-    courses: {
-      title: 'Khoá Học & Môn Học',
-      subtitle: 'Danh sách môn học, tiến độ hoàn thành và phân bổ bài giảng.'
-    },
-    timetable: {
-      title: 'Thời Khóa Biểu & Lịch Học',
-      subtitle: 'Xếp lịch học Sáng/Chiều từ T2 đến CN bằng kéo thả trực quan và quản lý phòng học tự do.'
-    },
-    tasks: {
-      title: 'Nhiệm Vụ',
-      subtitle: 'Quản lý danh sách nhiệm vụ cần làm, hạn chót và chia nhỏ bước bằng AI.'
-    },
-    notes: {
-      title: 'Ghi Chú Học Tập',
-      subtitle: 'Hệ thống tài liệu tóm tắt kiến thức, cú pháp và mẹo thực hành.'
-    },
-    goals: {
-      title: 'Mục Tiêu & Chỉ Tiêu Tự Học',
-      subtitle: 'Thiết lập KPI học tập cá nhân, số giờ học tập và bài tập giải quyết.'
-    },
-    ai: {
-      title: 'Trợ Lý Học Tập AI (Planora Assistant)',
-      subtitle: 'Hỏi đáp bài học, giải thích khái niệm phức tạp và gợi ý lộ trình.'
-    },
-    errors: {
-      title: 'Trung Tâm Báo & Sửa Lỗi',
-      subtitle: 'Ghi nhận sự cố, theo dõi trạng thái khắc phục và kiểm định chất lượng.'
-    },
-    notifications: {
-      title: 'Thông Báo & Nhắc Nhở',
-      subtitle: 'Cập nhật deadline nộp bài, đề xuất tối ưu từ Gemini AI và hoạt động khóa học.'
-    },
-    profile: {
-      title: 'Thông Tin Cá Nhân',
-      subtitle: 'Hồ sơ học viên, thông tin liên hệ và chuyên ngành đào tạo.'
-    },
-    settings: {
-      title: 'Cài Đặt & Tuỳ Chỉnh',
-      subtitle: 'Quản lý giao diện, thông báo, mật khẩu và trải nghiệm cá nhân.'
-    },
-    users: {
-      title: 'Quản Trị Người Dùng & Giám Sát Tài Khoản',
-      subtitle: 'Xem toàn bộ tài khoản, trạng thái Online/Offline, thông tin cá nhân và quản trị phân quyền.'
-    }
+  const title = t(`header.${activeTab}.title`, 'Planora');
+  const subtitle = t(`header.${activeTab}.subtitle`, 'Smart Learning & Workspace Platform');
+
+  const toggleLanguage = () => {
+    setLanguage(language === 'en' ? 'vi' : 'en');
   };
-
-  const current = titles[activeTab] || titles.dashboard;
 
   return (
     <header className={`h-16 border-b px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-md transition-colors ${
@@ -108,16 +64,49 @@ export function Header({
 
         <div className="min-w-0">
           <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate">
-            {current.title}
+            {title}
           </h1>
           <p className={`text-xs hidden md:block truncate ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-            {current.subtitle}
+            {subtitle}
           </p>
         </div>
       </div>
 
       {/* Action Controls */}
       <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+        {/* Quick Language Toggle */}
+        <button
+          type="button"
+          onClick={toggleLanguage}
+          title={language === 'en' ? 'Switch to Tiếng Việt' : 'Switch to English'}
+          className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+            isDark
+              ? 'bg-neutral-900 border-neutral-800 text-neutral-200 hover:bg-neutral-800 hover:text-white'
+              : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:text-slate-900'
+          }`}
+        >
+          <Languages className="w-3.5 h-3.5 text-indigo-500" />
+          <span className="uppercase tracking-wider font-bold text-[11px]">
+            {language === 'en' ? 'EN' : 'VI'}
+          </span>
+        </button>
+
+        {/* Quick Settings Shortcut */}
+        <button
+          type="button"
+          onClick={() => onNavigate('settings')}
+          title={t('nav.settings')}
+          className={`p-2 rounded-xl border transition-all cursor-pointer hidden sm:flex items-center justify-center ${
+            activeTab === 'settings'
+              ? 'bg-indigo-600 text-white border-indigo-600'
+              : isDark
+                ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
+          }`}
+        >
+          <SettingsIcon className="w-4 h-4" />
+        </button>
+
         {/* Ask AI button */}
         <button
           type="button"
@@ -129,7 +118,7 @@ export function Header({
           }`}
         >
           <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-          <span className="hidden sm:inline">Hỏi Trợ Lý AI</span>
+          <span className="hidden sm:inline">{t('nav.ai')}</span>
           <span className="sm:hidden">AI</span>
         </button>
 
@@ -137,7 +126,7 @@ export function Header({
         <button
           type="button"
           onClick={toggleTheme}
-          title={isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
+          title={isDark ? 'Light Mode' : 'Dark Mode'}
           className={`p-2 rounded-xl border transition-all cursor-pointer ${
             isDark
               ? 'bg-neutral-900 border-neutral-800 text-amber-300 hover:bg-neutral-800 hover:text-amber-200'
@@ -193,3 +182,4 @@ export function Header({
     </header>
   );
 }
+

@@ -6,13 +6,16 @@ import {
   StickyNote, 
   Target, 
   Bot, 
-  Home,
-  X,
-  Users
+  Home, 
+  X, 
+  Users,
+  Settings as SettingsIcon,
+  ShieldCheck
 } from 'lucide-react';
 import { ActiveTab } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { PlanoraLogo } from '../common/PlanoraLogo';
 
 interface SidebarProps {
@@ -48,22 +51,23 @@ export function Sidebar({
 }: SidebarProps) {
   const { isDark } = useTheme();
   const { isAdmin } = useAuth();
+  const { language, t } = useLanguage();
 
   const baseNavItems: NavItem[] = [
-    { id: 'dashboard', label: 'Tổng Quan', icon: LayoutDashboard },
-    { id: 'courses', label: 'Khoá Học', icon: BookOpen },
-    { id: 'timetable', label: 'Thời Khóa Biểu', icon: CalendarDays },
-    { id: 'tasks', label: 'Nhiệm Vụ', icon: CheckSquare },
-    { id: 'notes', label: 'Ghi Chú', icon: StickyNote },
-    { id: 'goals', label: 'Mục Tiêu', icon: Target },
-    { id: 'ai', label: 'Trợ Lý AI', icon: Bot, highlight: true }
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { id: 'courses', label: t('nav.courses'), icon: BookOpen },
+    { id: 'timetable', label: t('nav.timetable'), icon: CalendarDays },
+    { id: 'tasks', label: t('nav.tasks'), icon: CheckSquare },
+    { id: 'notes', label: t('nav.notes'), icon: StickyNote },
+    { id: 'goals', label: t('nav.goals'), icon: Target },
+    { id: 'ai', label: t('nav.ai'), icon: Bot, highlight: true }
   ];
 
   // Chỉ role admin mới có thêm menu là trang quản lý dữ liệu tài khoản và trạng thái online
   const navItems: NavItem[] = isAdmin 
     ? [
         ...baseNavItems,
-        { id: 'users', label: 'Quản Lý Tài Khoản', icon: Users, highlight: true }
+        { id: 'users', label: t('nav.users'), icon: Users, highlight: true }
       ]
     : baseNavItems;
 
@@ -172,6 +176,31 @@ export function Sidebar({
           );
         })}
       </nav>
+
+      {/* Footer System & Settings Link */}
+      <div className={`p-3 border-t space-y-1 shrink-0 ${isDark ? 'border-neutral-800' : 'border-slate-200'}`}>
+        <button
+          type="button"
+          onClick={() => handleSelectTab('settings')}
+          className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            activeTab === 'settings'
+              ? 'bg-indigo-600 text-white font-bold shadow-xs'
+              : isDark
+                ? 'text-neutral-400 hover:text-white hover:bg-neutral-800'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <SettingsIcon className="w-4 h-4 shrink-0" />
+            <span>{t('nav.settings')}</span>
+          </div>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold uppercase ${
+            activeTab === 'settings' ? 'bg-white/20 text-white' : 'bg-indigo-500/15 text-indigo-500'
+          }`}>
+            {language.toUpperCase()}
+          </span>
+        </button>
+      </div>
     </div>
   );
 

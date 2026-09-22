@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { ActiveTab } from '../../types';
 
 interface UserMenuProps {
@@ -23,6 +24,7 @@ interface UserMenuProps {
 export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
   const { user, isAdmin, logout } = useAuth();
   const { isDark } = useTheme();
+  const { language, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -41,10 +43,10 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
 
   return (
     <div className="relative" ref={menuRef}>
-      {/* Rút gọn chỉ hiện mỗi hình logo / avatar */}
+      {/* Avatar button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        title={`Tài khoản: ${user.name}`}
+        title={`Account: ${user.name}`}
         className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer relative ${
           isOpen
             ? 'ring-2 ring-indigo-500/50 border-indigo-500 shadow-sm'
@@ -97,7 +99,7 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
                     ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' 
                     : 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
                 }`}>
-                  {isAdmin ? 'Quản Trị Viên' : 'Học Viên'}
+                  {isAdmin ? (language === 'vi' ? 'Quản Trị Viên' : 'Administrator') : (language === 'vi' ? 'Học Viên' : 'Student')}
                 </span>
                 <span className={`text-[10px] ${isDark ? 'text-neutral-500' : 'text-slate-400'}`}>
                   • {user.studentCode || 'Planora LMS'}
@@ -123,7 +125,7 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
                 <div className={`p-1.5 rounded-lg ${isDark ? 'bg-neutral-800 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                   <UserIcon className="w-3.5 h-3.5" />
                 </div>
-                <span>Thông tin cá nhân</span>
+                <span>{t('nav.profile')}</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-50" />
             </button>
@@ -143,7 +145,7 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
                 <div className={`p-1.5 rounded-lg ${isDark ? 'bg-neutral-800 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
                   <Settings className="w-3.5 h-3.5" />
                 </div>
-                <span>Cài đặt hệ thống</span>
+                <span>{t('nav.settings')}</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-50" />
             </button>
@@ -163,7 +165,7 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
                 <div className={`p-1.5 rounded-lg ${isDark ? 'bg-neutral-800 text-rose-400' : 'bg-rose-50 text-rose-600'}`}>
                   <AlertCircle className="w-3.5 h-3.5" />
                 </div>
-                <span>Báo lỗi</span>
+                <span>{language === 'vi' ? 'Báo lỗi & Phản hồi' : 'Report Issue & Bug'}</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-50" />
             </button>
@@ -184,14 +186,14 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
                   <div className={`p-1.5 rounded-lg ${isDark ? 'bg-indigo-950/70 text-indigo-400' : 'bg-indigo-100 text-indigo-700'}`}>
                     <Users className="w-3.5 h-3.5" />
                   </div>
-                  <span>Quản lý tài khoản (Admin)</span>
+                  <span>{t('nav.users')} (Admin)</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 opacity-50" />
               </button>
             )}
           </div>
 
-          {/* Divider & Đăng xuất được đem vô trong này luôn - Căn chỉnh đồng bộ 3 mục */}
+          {/* Divider & Đăng xuất */}
           <div className={`pt-1.5 mt-1 border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
             <button
               onClick={async () => {
@@ -209,7 +211,7 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
                 <div className={`p-1.5 rounded-lg ${isDark ? 'bg-rose-950/50 text-rose-400' : 'bg-rose-50 text-rose-600'}`}>
                   <LogOut className="w-3.5 h-3.5" />
                 </div>
-                <span>Đăng xuất tài khoản</span>
+                <span>{language === 'vi' ? 'Đăng xuất tài khoản' : 'Sign Out'}</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-50" />
             </button>

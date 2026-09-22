@@ -816,6 +816,10 @@ function PlanoraWorkspace() {
                     lastAutoSaveTime={lastAutoSaveTime}
                     isAutoSaving={isAutoSaving}
                     onTriggerManualSave={() => handleTriggerAutoSave(true)}
+                    courses={courses}
+                    tasks={tasks}
+                    goals={goals}
+                    notes={notes}
                   />
                 )}
 
