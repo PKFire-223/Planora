@@ -8,7 +8,8 @@ import {
   Mail, 
   ChevronRight,
   Info,
-  AlertCircle
+  AlertCircle,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -166,6 +167,28 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
               </div>
               <ChevronRight className="w-3.5 h-3.5 opacity-50" />
             </button>
+
+            {isAdmin && (
+              <button
+                onClick={() => {
+                  onNavigate('users');
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  isDark 
+                    ? 'hover:bg-neutral-800 text-indigo-300 hover:text-white' 
+                    : 'hover:bg-indigo-50 text-indigo-700 hover:text-indigo-800'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className={`p-1.5 rounded-lg ${isDark ? 'bg-indigo-950/70 text-indigo-400' : 'bg-indigo-100 text-indigo-700'}`}>
+                    <Users className="w-3.5 h-3.5" />
+                  </div>
+                  <span>Quản lý tài khoản (Admin)</span>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 opacity-50" />
+              </button>
+            )}
           </div>
 
           {/* Divider & Đăng xuất được đem vô trong này luôn - Căn chỉnh đồng bộ 3 mục */}

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { AlertCircle, CheckCircle2, Plus, Bug, ShieldAlert, Check } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Plus, Bug, ShieldAlert, Check, Lock } from 'lucide-react';
 import { ErrorReport } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface ErrorReportsViewProps {
   errors: ErrorReport[];
@@ -15,6 +16,7 @@ export function ErrorReportsView({
   onResolveError
 }: ErrorReportsViewProps) {
   const { isDark } = useTheme();
+  const { isAdmin } = useAuth();
   const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('open');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
@@ -67,7 +69,9 @@ export function ErrorReportsView({
             <span>Trung Tâm Báo Cáo & Xử Lý Sự Cố (Error Tracker)</span>
           </div>
           <p className={`text-xs max-w-xl leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
-            Ghi nhận các ngoại lệ hệ thống, lỗi kết nối cơ sở dữ liệu và tiếp nhận phản hồi từ người dùng. Bạn có thể ghi chép giải pháp khắc phục trực tiếp.
+            {isAdmin 
+              ? 'Quyền Quản Trị Viên (Admin): Bạn có toàn quyền ghi nhận, kiểm tra giải pháp và đánh dấu xác nhận đã khắc phục sự cố.'
+              : 'Quyền Học Viên / Thành Viên: Bạn có thể gửi báo cáo sự cố mới và theo dõi tiến độ xử lý của kỹ thuật viên. Chỉ Quản trị viên mới có thể xác nhận đã khắc phục.'}
           </p>
         </div>
 
@@ -160,13 +164,22 @@ export function ErrorReportsView({
 
                 <div className="flex items-center gap-2 self-end sm:self-auto">
                   {err.status !== 'resolved' && (
-                    <button
-                      onClick={() => setResolvingId(resolvingId === err.id ? null : err.id)}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Xác nhận đã sửa</span>
-                    </button>
+                    isAdmin ? (
+                      <button
+                        onClick={() => setResolvingId(resolvingId === err.id ? null : err.id)}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Xác nhận đã sửa</span>
+                      </button>
+                    ) : (
+                      <span className={`text-[11px] px-2 py-1 rounded-md flex items-center gap-1 ${
+                        isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'
+                      }`}>
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        <span>Chỉ Admin phê duyệt</span>
+                      </span>
+                    )
                   )}
                   <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
                     err.status === 'resolved'

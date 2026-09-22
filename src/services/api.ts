@@ -137,6 +137,145 @@ export const api = {
     );
   },
 
+  // Admin User Management
+  async getAllUsers(token?: string): Promise<{ success: boolean; count: number; data: User[] }> {
+    return request(
+      '/api/auth/users',
+      {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      },
+      () => {
+        const fallbackUsers: User[] = [
+          {
+            id: 'user-admin-seed',
+            name: 'Quản Trị Viên Hệ Thống',
+            email: 'systemadmin@gmail.com',
+            role: 'admin',
+            createdAt: '2026-08-20',
+            lastActiveAt: new Date().toISOString(),
+            phone: '0901 234 567',
+            studentCode: 'ADMIN-001',
+            faculty: 'Quản Trị Hệ Thống Planora',
+            bio: 'Quản trị viên toàn quyền hệ thống.'
+          },
+          {
+            id: 'user-demo-student',
+            name: 'Nguyễn Văn Minh',
+            email: 'hocvien@planora.edu.vn',
+            role: 'student',
+            createdAt: '2026-09-15',
+            lastActiveAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+            phone: '0987 654 321',
+            studentCode: 'IT-2026-8899',
+            faculty: 'Công Nghệ Thông Tin & Khoa Học Máy Tính',
+            bio: 'Học viên đam mê phát triển Fullstack.'
+          },
+          {
+            id: 'user-demo-student-2',
+            name: 'Trần Thị Mai Lan',
+            email: 'mailan.tran@planora.edu.vn',
+            role: 'student',
+            createdAt: '2026-09-17',
+            lastActiveAt: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
+            phone: '0912 345 678',
+            studentCode: 'DS-2026-1042',
+            faculty: 'Khoa Học Dữ Liệu & AI',
+            bio: 'Nghiên cứu thị giác máy tính và NLP.'
+          },
+          {
+            id: 'user-demo-student-3',
+            name: 'Lê Hoàng Long',
+            email: 'hoanglong.le@planora.edu.vn',
+            role: 'student',
+            createdAt: '2026-09-10',
+            lastActiveAt: new Date(Date.now() - 28 * 3600 * 1000).toISOString(),
+            phone: '0933 888 999',
+            studentCode: 'SE-2026-3021',
+            faculty: 'Kỹ Thuật Hệ Thống & Mạng Máy Tính',
+            bio: 'Đam mê DevOps và an ninh mạng.'
+          }
+        ];
+        return {
+          success: true,
+          count: fallbackUsers.length,
+          data: fallbackUsers
+        };
+      }
+    );
+  },
+
+  async createUserByAdmin(data: Partial<User> & { password: string }, token?: string): Promise<{ success: boolean; data: User; message?: string }> {
+    return request(
+      '/api/auth/users',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      },
+      () => {
+        const newUser: User = {
+          id: `user-${Date.now()}`,
+          name: data.name || 'Người dùng mới',
+          email: (data.email || '').trim().toLowerCase(),
+          role: data.role || 'student',
+          createdAt: new Date().toISOString(),
+          lastActiveAt: new Date().toISOString(),
+          phone: data.phone || '',
+          studentCode: data.studentCode || `STU-${Math.floor(1000 + Math.random() * 9000)}`,
+          faculty: data.faculty || 'Công Nghệ Thông Tin',
+          bio: data.bio || ''
+        };
+        return { success: true, data: newUser, message: 'Đã tạo tài khoản mới' };
+      }
+    );
+  },
+
+  async updateUserByAdmin(id: string, data: Partial<User> & { password?: string }, token?: string): Promise<{ success: boolean; data: User; message?: string }> {
+    return request(
+      `/api/auth/users/${id}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      },
+      () => {
+        return {
+          success: true,
+          data: {
+            id,
+            name: data.name || 'Người dùng',
+            email: data.email || 'user@planora.edu.vn',
+            role: data.role || 'student',
+            createdAt: '2026-09-01',
+            lastActiveAt: new Date().toISOString(),
+            phone: data.phone,
+            studentCode: data.studentCode,
+            faculty: data.faculty,
+            bio: data.bio
+          },
+          message: 'Đã cập nhật thông tin tài khoản'
+        };
+      }
+    );
+  },
+
+  async deleteUserByAdmin(id: string, token?: string): Promise<{ success: boolean; message?: string }> {
+    return request(
+      `/api/auth/users/${id}`,
+      {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      },
+      () => ({ success: true, message: 'Đã xóa tài khoản thành công' })
+    );
+  },
+
   // Health
   async getHealth() {
     return request('/api/health', undefined, () => ({
@@ -638,5 +777,64 @@ export const api = {
         throw new Error('Báo cáo lỗi không tồn tại');
       }
     );
+  },
+
+  // 5-Minute Auto-Save & MongoDB Periodic Backup
+  async autoSaveData(payload: {
+    courses: Course[];
+    tasks: Task[];
+    goals: Goal[];
+  }): Promise<{
+    success: boolean;
+    message?: string;
+    savedAt?: string;
+    storage?: any;
+    counts?: { courses: number; tasks: number; goals: number };
+  }> {
+    // Save to browser localStorage immediately to protect against sudden network disconnects
+    try {
+      localStorage.setItem('planora_backup_courses', JSON.stringify(payload.courses));
+      localStorage.setItem('planora_backup_tasks', JSON.stringify(payload.tasks));
+      localStorage.setItem('planora_backup_goals', JSON.stringify(payload.goals));
+      localStorage.setItem('planora_last_backup_time', new Date().toISOString());
+    } catch {
+      // ignore storage error
+    }
+
+    return request(
+      '/api/sync/auto-save',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      },
+      () => {
+        return {
+          success: true,
+          message: 'Đã lưu offline an toàn vào bộ nhớ cục bộ',
+          savedAt: new Date().toISOString(),
+          storage: { mongo: false, inMemory: true, databaseStatus: 'Offline LocalStorage Safeguard' },
+          counts: {
+            courses: payload.courses.length,
+            tasks: payload.tasks.length,
+            goals: payload.goals.length
+          }
+        };
+      }
+    );
+  },
+
+  async getSyncStatus(): Promise<{
+    success: boolean;
+    mongoConnected?: boolean;
+    database?: string;
+    lastBackupTimestamp?: string | null;
+  }> {
+    return request('/api/sync/status', undefined, () => ({
+      success: true,
+      mongoConnected: false,
+      database: 'LocalStorage / MemoryStore Fallback',
+      lastBackupTimestamp: localStorage.getItem('planora_last_backup_time')
+    }));
   }
 };

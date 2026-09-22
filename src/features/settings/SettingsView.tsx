@@ -16,7 +16,17 @@ import {
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
-export function SettingsView() {
+interface SettingsViewProps {
+  lastAutoSaveTime?: string | null;
+  isAutoSaving?: boolean;
+  onTriggerManualSave?: () => void;
+}
+
+export function SettingsView({
+  lastAutoSaveTime,
+  isAutoSaving,
+  onTriggerManualSave
+}: SettingsViewProps = {}) {
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
 
@@ -240,6 +250,63 @@ export function SettingsView() {
           </button>
         </div>
       </form>
+
+      {/* 4. Tự Động Lưu & Sao Lưu Dữ Liệu Định Kỳ */}
+      <div className={`p-6 rounded-2xl border space-y-4 transition-colors ${
+        isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900 shadow-xs'
+      }`}>
+        <div className="flex items-center justify-between pb-3 border-b dark:border-neutral-800 border-slate-200">
+          <div className="flex items-center gap-2.5">
+            <Database className="w-5 h-5 text-emerald-500" />
+            <h2 className="text-base font-bold">Sao Lưu & Bảo Vệ Dữ Liệu Tự Động</h2>
+          </div>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Chu kỳ 5 phút/lần</span>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-1">
+          <div>
+            <div className="font-semibold text-xs sm:text-sm">Trạng thái đồng bộ tự động</div>
+            <div className={`text-xs mt-0.5 max-w-xl leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+              Hệ thống tự động lưu toàn bộ dữ liệu khoá học, nhiệm vụ và mục tiêu học tập định kỳ mỗi 5 phút để bảo vệ dữ liệu khi mất kết nối mạng đột ngột.
+              {lastAutoSaveTime && (
+                <span className="block mt-1 font-medium text-emerald-600 dark:text-emerald-400">
+                  Lần sao lưu gần nhất: {lastAutoSaveTime}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {onTriggerManualSave && (
+            <button
+              type="button"
+              onClick={onTriggerManualSave}
+              disabled={isAutoSaving}
+              className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shrink-0 ${
+                isAutoSaving
+                  ? 'bg-indigo-500/20 text-indigo-400 cursor-not-allowed border-indigo-500/30'
+                  : isDark
+                    ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              {isAutoSaving ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                  <span>Đang đồng bộ...</span>
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Sao lưu ngay bây giờ</span>
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

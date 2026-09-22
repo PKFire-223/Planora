@@ -1,4 +1,4 @@
-import { Sparkles, Sun, Moon, LogIn } from 'lucide-react';
+import { Sparkles, Sun, Moon, LogIn, Menu } from 'lucide-react';
 import { ActiveTab, NotificationItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -14,6 +14,8 @@ interface HeaderProps {
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
   onNavigate: (tab: ActiveTab) => void;
+  onDeleteNotification?: (id: string) => void;
+  onToggleMobileMenu?: () => void;
 }
 
 export function Header({ 
@@ -24,7 +26,9 @@ export function Header({
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
-  onNavigate
+  onNavigate,
+  onDeleteNotification,
+  onToggleMobileMenu
 }: HeaderProps) {
   const { isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
@@ -73,33 +77,52 @@ export function Header({
     settings: {
       title: 'Cài Đặt & Tuỳ Chỉnh',
       subtitle: 'Quản lý giao diện, thông báo, mật khẩu và trải nghiệm cá nhân.'
+    },
+    users: {
+      title: 'Quản Trị Người Dùng & Giám Sát Tài Khoản',
+      subtitle: 'Xem toàn bộ tài khoản, trạng thái Online/Offline, thông tin cá nhân và quản trị phân quyền.'
     }
   };
 
   const current = titles[activeTab] || titles.dashboard;
 
   return (
-    <header className={`h-16 border-b px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-md transition-colors ${
+    <header className={`h-16 border-b px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-md transition-colors ${
       isDark 
         ? 'bg-neutral-950/80 border-neutral-800 text-neutral-100' 
         : 'bg-white/85 border-slate-200 text-slate-900 shadow-xs'
     }`}>
-      {/* Title & Subtitle */}
-      <div>
-        <h1 className="text-base sm:text-lg font-bold tracking-tight">
-          {current.title}
-        </h1>
-        <p className={`text-xs hidden sm:block ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-          {current.subtitle}
-        </p>
+      {/* Title & Subtitle + Mobile Hamburger Menu */}
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+        {onToggleMobileMenu && (
+          <button
+            type="button"
+            onClick={onToggleMobileMenu}
+            className="p-2 -ml-1 rounded-xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 lg:hidden cursor-pointer shrink-0 transition-colors"
+            title="Mở menu điều hướng"
+            aria-label="Mở menu điều hướng"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
+
+        <div className="min-w-0">
+          <h1 className="text-sm sm:text-base md:text-lg font-bold tracking-tight truncate">
+            {current.title}
+          </h1>
+          <p className={`text-xs hidden md:block truncate ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+            {current.subtitle}
+          </p>
+        </div>
       </div>
 
       {/* Action Controls */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* Ask AI button */}
         <button
+          type="button"
           onClick={onOpenAi}
-          className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+          className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
             isDark
               ? 'bg-indigo-950/40 border-indigo-700/50 text-indigo-300 hover:bg-indigo-900/50 hover:text-white'
               : 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300'
@@ -112,6 +135,7 @@ export function Header({
 
         {/* Theme Toggle (Light / Dark) */}
         <button
+          type="button"
           onClick={toggleTheme}
           title={isDark ? 'Chuyển sang chế độ Sáng' : 'Chuyển sang chế độ Tối'}
           className={`p-2 rounded-xl border transition-all cursor-pointer ${
@@ -127,36 +151,39 @@ export function Header({
           )}
         </button>
 
-        {/* Icon thông báo pop-up */}
+        {/* Notification pop-up */}
         <NotificationPopover
           notifications={notifications}
           onMarkAsRead={onMarkAsRead}
           onMarkAllAsRead={onMarkAllAsRead}
           onNavigate={onNavigate}
+          onDeleteNotification={onDeleteNotification}
         />
 
         <div className={`h-5 w-px ${isDark ? 'bg-neutral-800' : 'bg-slate-200'}`} />
 
-        {/* User Account Menu Pop-up (Logo duy nhất, bấm hiện pop-up hồ sơ, cài đặt, đăng xuất) */}
+        {/* User Account Menu Pop-up */}
         {user ? (
           <UserMenu onNavigate={onNavigate} onGoToLanding={onGoToLanding} />
         ) : (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
+              type="button"
               onClick={() => onOpenAuth ? onOpenAuth('login') : null}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer ${
                 isDark 
                   ? 'bg-neutral-900 border-neutral-800 text-neutral-200 hover:text-white hover:bg-neutral-800' 
                   : 'bg-slate-100 border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-200'
               }`}
             >
               <LogIn className="w-3.5 h-3.5" />
-              <span>Đăng nhập</span>
+              <span className="hidden sm:inline">Đăng nhập</span>
             </button>
 
             <button
+              type="button"
               onClick={() => onOpenAuth ? onOpenAuth('register') : null}
-              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors shadow-sm cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors shadow-sm cursor-pointer"
             >
               <span>Đăng ký</span>
             </button>

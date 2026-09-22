@@ -117,6 +117,7 @@ export interface User {
   studentCode?: string;
   faculty?: string;
   createdAt: string;
+  lastActiveAt?: string;
 }
 
 export interface NotificationItem {
@@ -157,7 +158,8 @@ export type ActiveTab =
   | 'errors'
   | 'notifications'
   | 'profile'
-  | 'settings';
+  | 'settings'
+  | 'users';
 
 // Legacy types for existing components
 export interface Project {

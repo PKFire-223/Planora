@@ -6,6 +6,7 @@ import { goalRouter } from './modules/goals/goal.routes';
 import { aiRouter } from './modules/ai/ai.routes';
 import { errorRouter } from './modules/errors/errorLog.routes';
 import { authRouter } from './modules/auth/auth.routes';
+import { syncRouter } from './modules/sync/sync.routes';
 import { memoryStore, isMongoConnected } from './config/db';
 
 export const apiRouter = Router();
@@ -39,3 +40,4 @@ apiRouter.use('/notes', noteRouter);
 apiRouter.use('/goals', goalRouter);
 apiRouter.use('/ai', aiRouter);
 apiRouter.use('/errors', errorRouter);
+apiRouter.use('/sync', syncRouter);

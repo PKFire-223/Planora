@@ -7,7 +7,8 @@ import {
   CheckCircle2, 
   CheckCheck, 
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 import { NotificationItem, ActiveTab } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -17,13 +18,15 @@ interface NotificationPopoverProps {
   onMarkAsRead: (id: string) => void;
   onMarkAllAsRead: () => void;
   onNavigate: (tab: ActiveTab) => void;
+  onDeleteNotification?: (id: string) => void;
 }
 
 export function NotificationPopover({
   notifications,
   onMarkAsRead,
   onMarkAllAsRead,
-  onNavigate
+  onNavigate,
+  onDeleteNotification
 }: NotificationPopoverProps) {
   const { isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
@@ -160,6 +163,22 @@ export function NotificationPopover({
                       {item.timestamp}
                     </span>
                   </div>
+
+                  {onDeleteNotification && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteNotification(item.id);
+                      }}
+                      title="Xóa thông báo này"
+                      className={`p-1 rounded-md opacity-40 hover:opacity-100 transition-opacity shrink-0 cursor-pointer ${
+                        isDark ? 'hover:bg-neutral-700 hover:text-rose-400' : 'hover:bg-slate-200 hover:text-rose-600'
+                      }`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               ))
             )}

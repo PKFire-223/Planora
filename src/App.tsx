@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { LandingPageView } from './features/landing/LandingPageView';
 import { AuthSplitView } from './features/auth/AuthSplitView';
 import { DashboardView } from './features/dashboard/DashboardView';
@@ -14,6 +15,7 @@ import { ErrorReportsView } from './features/errorReports/ErrorReportsView';
 import { NotificationsView } from './features/notifications/NotificationsView';
 import { ProfileView } from './features/profile/ProfileView';
 import { SettingsView } from './features/settings/SettingsView';
+import { AdminUsersView } from './features/admin/AdminUsersView';
 import { ToastContainer } from './components/common/ToastContainer';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { api } from './services/api';
@@ -51,13 +53,105 @@ function PlanoraWorkspace() {
     aiPrompt?: string;
   }>({});
   const [loading, setLoading] = useState(true);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [lastAutoSaveTime, setLastAutoSaveTime] = useState<string | null>(() => {
+    try {
+      const saved = localStorage.getItem('planora_last_backup_time');
+      if (saved) {
+        return new Date(saved).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  });
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   // Track already-notified deadline task IDs to avoid repeat spamming
   const notifiedDeadlinesRef = useRef<Set<string>>(new Set());
 
+  // 5-Minute Auto-Save Periodic Trigger (courses, tasks, goals -> MongoDB & localStorage)
+  const handleTriggerAutoSave = useCallback(async (isManual = false) => {
+    // Only auto-save if there is loaded data in state
+    if (courses.length === 0 && tasks.length === 0 && goals.length === 0) return;
+
+    setIsAutoSaving(true);
+    try {
+      const res = await api.autoSaveData({ courses, tasks, goals });
+      const nowTimeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      setLastAutoSaveTime(nowTimeStr);
+
+      if (isManual) {
+        showToast({
+          type: 'success',
+          title: 'Đã sao lưu an toàn',
+          message: `Đã lưu trạng thái (${res.counts?.courses ?? courses.length} môn, ${res.counts?.tasks ?? tasks.length} nhiệm vụ, ${res.counts?.goals ?? goals.length} mục tiêu).`,
+          duration: 3500
+        });
+      }
+    } catch (err: any) {
+      console.warn('[AutoSave] Backup warning:', err);
+      if (isManual) {
+        showToast({
+          type: 'warning',
+          title: 'Đã lưu cục bộ',
+          message: 'Dữ liệu đã được lưu an toàn vào bộ nhớ trình duyệt!',
+          duration: 3500
+        });
+      }
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [courses, tasks, goals, showToast]);
+
+  // Periodic Auto-Save every 5 minutes (300,000 ms)
+  useEffect(() => {
+    // Run interval only if in LMS app mode
+    if (viewMode !== 'app') return;
+
+    const intervalId = setInterval(() => {
+      handleTriggerAutoSave(false);
+    }, 5 * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [viewMode, handleTriggerAutoSave]);
+
+  // Network connection listener to safeguard against sudden offline disconnections
+  useEffect(() => {
+    const handleOffline = () => {
+      // Immediately backup current state to localStorage
+      api.autoSaveData({ courses, tasks, goals });
+      showToast({
+        type: 'warning',
+        title: 'Mất kết nối Internet',
+        message: 'Chế độ ngoại tuyến: Dữ liệu (courses, tasks, goals) đã được tự động lưu an toàn trong máy!',
+        duration: 5000
+      });
+    };
+
+    const handleOnline = () => {
+      showToast({
+        type: 'info',
+        title: 'Đã khôi phục Internet',
+        message: 'Đang tự động đồng bộ lại toàn bộ dữ liệu lên MongoDB...',
+        duration: 4000
+      });
+      handleTriggerAutoSave(false);
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, [courses, tasks, goals, handleTriggerAutoSave, showToast]);
+
   const handleToastNavigate = (tab: ActiveTab) => {
     setViewMode('app');
     setActiveTab(tab);
+    setIsMobileMenuOpen(false);
   };
 
   const handleNavigateWithContext = (
@@ -581,19 +675,27 @@ function PlanoraWorkspace() {
   return (
     <>
       <ToastContainer onNavigate={handleToastNavigate} />
-      <div className={`min-h-screen flex flex-row transition-colors duration-200 ${
+      <div className={`min-h-screen flex flex-row transition-colors duration-200 overflow-x-hidden ${
         isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-slate-50 text-slate-900'
       }`}>
-        {/* Persistent Sidebar */}
+        {/* Responsive Sidebar (Desktop persistent + Mobile slide-over drawer) */}
         <Sidebar
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setIsMobileMenuOpen(false);
+          }}
           errorCount={openErrorCount}
           onGoToLanding={handleGoToLanding}
+          isMobileOpen={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
+          lastAutoSaveTime={lastAutoSaveTime}
+          isAutoSaving={isAutoSaving}
+          onTriggerManualSave={() => handleTriggerAutoSave(true)}
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
           <Header
             activeTab={activeTab}
             onOpenAi={() => setActiveTab('ai')}
@@ -602,10 +704,15 @@ function PlanoraWorkspace() {
             notifications={notifications}
             onMarkAsRead={handleMarkAsRead}
             onMarkAllAsRead={handleMarkAllAsRead}
-            onNavigate={setActiveTab}
+            onNavigate={(tab) => {
+              setActiveTab(tab);
+              setIsMobileMenuOpen(false);
+            }}
+            onDeleteNotification={handleDeleteNotification}
+            onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
           />
 
-          <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
+          <main className="flex-1 p-3 sm:p-5 md:p-6 pb-36 sm:pb-40 lg:pb-12 max-w-7xl w-full mx-auto overflow-y-auto min-w-0">
             {loading ? (
               <div className={`flex items-center justify-center h-64 text-xs font-medium ${
                 isDark ? 'text-neutral-400' : 'text-slate-500'
@@ -705,12 +812,34 @@ function PlanoraWorkspace() {
                 )}
 
                 {activeTab === 'settings' && (
-                  <SettingsView />
+                  <SettingsView 
+                    lastAutoSaveTime={lastAutoSaveTime}
+                    isAutoSaving={isAutoSaving}
+                    onTriggerManualSave={() => handleTriggerAutoSave(true)}
+                  />
+                )}
+
+                {activeTab === 'users' && (
+                  <AdminUsersView />
                 )}
               </>
             )}
+
+            {/* Explicit clearance spacer for mobile and tablet floating bottom nav bar */}
+            <div className="h-28 sm:h-32 lg:hidden w-full shrink-0" aria-hidden="true" />
           </main>
         </div>
+
+        {/* Mobile & Tablet Bottom Navigation Bar (< 1024px) */}
+        <MobileBottomNav
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setIsMobileMenuOpen(false);
+          }}
+          onToggleMenu={() => setIsMobileMenuOpen(true)}
+          pendingTasksCount={tasks.filter(t => t.status !== 'done').length}
+        />
       </div>
     </>
   );

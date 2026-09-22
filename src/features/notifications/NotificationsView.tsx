@@ -6,10 +6,16 @@ import {
   Sparkles, 
   Clock, 
   BookOpen, 
-  AlertCircle, 
   CheckCircle2, 
-  Filter,
-  ArrowRight
+  ArrowRight,
+  X,
+  ExternalLink,
+  CalendarDays,
+  Target,
+  StickyNote,
+  AlertTriangle,
+  Info,
+  Users
 } from 'lucide-react';
 import { NotificationItem, ActiveTab } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
@@ -31,6 +37,7 @@ export function NotificationsView({
 }: NotificationsViewProps) {
   const { isDark } = useTheme();
   const [filter, setFilter] = useState<'all' | 'unread' | 'deadline' | 'ai'>('all');
+  const [selectedNotification, setSelectedNotification] = useState<NotificationItem | null>(null);
 
   const filtered = useMemo(() => {
     return notifications.filter(item => {
@@ -42,6 +49,53 @@ export function NotificationsView({
   }, [notifications, filter]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
+
+  // Resolve target tab and human-friendly label for any notification
+  const resolveTarget = (item: NotificationItem): { tab: ActiveTab; label: string; icon: any } => {
+    if (item.linkTab) {
+      const tabMap: Record<ActiveTab, { label: string; icon: any }> = {
+        dashboard: { label: 'Bảng Điều Khiển', icon: Bell },
+        courses: { label: 'Khoá Học', icon: BookOpen },
+        timetable: { label: 'Thời Khóa Biểu', icon: CalendarDays },
+        tasks: { label: 'Nhiệm Vụ', icon: Clock },
+        notes: { label: 'Ghi Chú', icon: StickyNote },
+        goals: { label: 'Mục Tiêu', icon: Target },
+        ai: { label: 'Trợ Lý AI', icon: Sparkles },
+        errors: { label: 'Báo Cáo Lỗi', icon: AlertTriangle },
+        notifications: { label: 'Thông Báo', icon: Bell },
+        profile: { label: 'Thông Tin Cá Nhân', icon: Info },
+        settings: { label: 'Cài Đặt', icon: Info },
+        users: { label: 'Quản Trị Người Dùng', icon: Users }
+      };
+      const found = tabMap[item.linkTab];
+      return { 
+        tab: item.linkTab, 
+        label: found ? found.label : 'Trang Liên Quan', 
+        icon: found ? found.icon : ArrowRight 
+      };
+    }
+
+    const text = `${item.title} ${item.message}`.toLowerCase();
+    if (item.type === 'deadline' || item.type === 'warning' || text.includes('nhiệm vụ') || text.includes('hạn chót') || text.includes('bài tập') || text.includes('deadline')) {
+      return { tab: 'tasks', label: 'Nhiệm Vụ', icon: Clock };
+    }
+    if (item.type === 'ai' || text.includes('ai') || text.includes('trợ lý') || text.includes('gemini')) {
+      return { tab: 'ai', label: 'Trợ Lý AI', icon: Sparkles };
+    }
+    if (text.includes('thời khóa biểu') || text.includes('lịch học') || text.includes('tiết học') || text.includes('phòng học')) {
+      return { tab: 'timetable', label: 'Thời Khóa Biểu', icon: CalendarDays };
+    }
+    if (text.includes('môn học') || text.includes('khoá học') || text.includes('khóa học') || text.includes('bài giảng')) {
+      return { tab: 'courses', label: 'Khoá Học', icon: BookOpen };
+    }
+    if (text.includes('ghi chú') || text.includes('note') || text.includes('tài liệu')) {
+      return { tab: 'notes', label: 'Ghi Chú', icon: StickyNote };
+    }
+    if (text.includes('mục tiêu') || text.includes('kpi') || text.includes('chỉ tiêu')) {
+      return { tab: 'goals', label: 'Mục Tiêu', icon: Target };
+    }
+    return { tab: 'dashboard', label: 'Tổng Quan', icon: Bell };
+  };
 
   const getTypeIcon = (type: NotificationItem['type']) => {
     switch (type) {
@@ -56,6 +110,38 @@ export function NotificationsView({
       default:
         return <BookOpen className="w-4 h-4 text-indigo-500" />;
     }
+  };
+
+  const getTypeMeta = (type: NotificationItem['type']) => {
+    switch (type) {
+      case 'ai':
+        return { label: 'Đề xuất Trợ lý AI', badge: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20' };
+      case 'deadline':
+      case 'warning':
+        return { label: 'Hạn chót & Nhắc nhở', badge: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20' };
+      case 'success':
+        return { label: 'Thành công & Tiến độ', badge: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' };
+      case 'info':
+      default:
+        return { label: 'Thông tin hệ thống', badge: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20' };
+    }
+  };
+
+  const handleOpenNotification = (item: NotificationItem) => {
+    onMarkAsRead(item.id);
+    setSelectedNotification(item);
+  };
+
+  const handleGoToPage = (item: NotificationItem) => {
+    onMarkAsRead(item.id);
+    const target = resolveTarget(item);
+    setSelectedNotification(null);
+    onNavigate(target.tab);
+  };
+
+  const handleDeleteFromModal = (item: NotificationItem) => {
+    onDeleteNotification(item.id);
+    setSelectedNotification(null);
   };
 
   return (
@@ -80,7 +166,7 @@ export function NotificationsView({
               )}
             </div>
             <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-              Cập nhật hạn nộp bài, đề xuất tối ưu từ Gemini AI và hoạt động khóa học.
+              Bấm vào từng thông báo để xem chi tiết đầy đủ, chuyển nhanh tới trang xử lý hoặc xoá thông báo.
             </p>
           </div>
         </div>
@@ -88,6 +174,7 @@ export function NotificationsView({
         {/* Quick Actions */}
         {unreadCount > 0 && (
           <button
+            type="button"
             onClick={onMarkAllAsRead}
             className={`px-3.5 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
               isDark 
@@ -111,6 +198,7 @@ export function NotificationsView({
         ].map(tab => (
           <button
             key={tab.id}
+            type="button"
             onClick={() => setFilter(tab.id as any)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
               filter === tab.id
@@ -141,84 +229,239 @@ export function NotificationsView({
             <p className="text-xs mt-1 opacity-75">Mọi cập nhật mới của hệ thống sẽ xuất hiện tại đây.</p>
           </div>
         ) : (
-          filtered.map(item => (
-            <div
-              key={item.id}
-              onClick={() => onMarkAsRead(item.id)}
-              className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 cursor-pointer ${
-                !item.read
-                  ? isDark
-                    ? 'bg-indigo-950/20 border-indigo-800/60 shadow-xs'
-                    : 'bg-indigo-50/40 border-indigo-200/80 shadow-2xs'
-                  : isDark
-                    ? 'bg-neutral-900 border-neutral-800/80 hover:border-neutral-700'
-                    : 'bg-white border-slate-200 hover:border-slate-300'
-              }`}
-            >
-              <div className="flex items-start gap-3.5">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+          filtered.map(item => {
+            const target = resolveTarget(item);
+            const meta = getTypeMeta(item.type);
+
+            return (
+              <div
+                key={item.id}
+                onClick={() => handleOpenNotification(item)}
+                className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-4 cursor-pointer group ${
                   !item.read
-                    ? isDark ? 'bg-indigo-900/60 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
-                    : isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'
-                }`}>
-                  {getTypeIcon(item.type)}
+                    ? isDark
+                      ? 'bg-indigo-950/20 border-indigo-800/60 shadow-xs hover:border-indigo-700'
+                      : 'bg-indigo-50/40 border-indigo-200/80 shadow-2xs hover:border-indigo-300'
+                    : isDark
+                      ? 'bg-neutral-900 border-neutral-800/80 hover:border-neutral-700'
+                      : 'bg-white border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${
+                    !item.read
+                      ? isDark ? 'bg-indigo-900/60 text-indigo-300' : 'bg-indigo-100 text-indigo-700'
+                      : isDark ? 'bg-neutral-800 text-neutral-400' : 'bg-slate-100 text-slate-500'
+                  }`}>
+                    {getTypeIcon(item.type)}
+                  </div>
+
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold border ${meta.badge}`}>
+                        {meta.label}
+                      </span>
+
+                      <h2 className={`text-xs sm:text-sm font-bold truncate ${
+                        !item.read 
+                          ? isDark ? 'text-white' : 'text-slate-900' 
+                          : isDark ? 'text-neutral-300' : 'text-slate-700'
+                      }`}>
+                        {item.title}
+                      </h2>
+
+                      {!item.read && (
+                        <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" title="Chưa đọc" />
+                      )}
+                    </div>
+
+                    <p className={`text-xs leading-relaxed line-clamp-2 ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
+                      {item.message}
+                    </p>
+
+                    <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-400 dark:text-neutral-500 flex-wrap">
+                      <span>{item.timestamp}</span>
+                      <span>•</span>
+                      <span className="text-indigo-600 dark:text-indigo-400 font-medium group-hover:underline">
+                        Bấm để xem chi tiết
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h2 className={`text-xs sm:text-sm font-bold ${
-                      !item.read 
-                        ? isDark ? 'text-white' : 'text-slate-900' 
-                        : isDark ? 'text-neutral-300' : 'text-slate-700'
-                    }`}>
-                      {item.title}
-                    </h2>
-                    {!item.read && (
-                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-                    )}
-                  </div>
+                {/* Right Action Buttons */}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Quick "Đi tới trang" button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGoToPage(item);
+                    }}
+                    title={`Đi tới ${target.label}`}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                      isDark
+                        ? 'bg-neutral-800 hover:bg-indigo-600 hover:text-white text-neutral-300'
+                        : 'bg-slate-100 hover:bg-indigo-600 hover:text-white text-slate-700'
+                    }`}
+                  >
+                    <span className="hidden md:inline text-[11px]">Đi tới {target.label}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
 
-                  <p className={`text-xs leading-relaxed ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
-                    {item.message}
+                  {/* Quick "Xóa" button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteNotification(item.id);
+                    }}
+                    title="Xoá thông báo này"
+                    className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                      isDark 
+                        ? 'text-neutral-400 hover:bg-neutral-800 hover:text-rose-400' 
+                        : 'text-slate-400 hover:bg-slate-100 hover:text-rose-600'
+                    }`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Modal Hiện Chi Tiết Thông Báo khi bấm vào */}
+      {selectedNotification && (() => {
+        const target = resolveTarget(selectedNotification);
+        const meta = getTypeMeta(selectedNotification.type);
+        const TargetIcon = target.icon;
+
+        return (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+            onClick={() => setSelectedNotification(null)}
+          >
+            <div 
+              className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${
+                isDark ? 'bg-neutral-900 border-neutral-800 text-neutral-100' : 'bg-white border-slate-200 text-slate-900'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className={`p-4 sm:p-5 border-b flex items-center justify-between ${
+                isDark ? 'bg-neutral-950/70 border-neutral-800' : 'bg-slate-50/80 border-slate-200'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                    {getTypeIcon(selectedNotification.type)}
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-400">
+                      Thông Báo Hệ Thống
+                    </span>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold border ${meta.badge}`}>
+                        {meta.label}
+                      </span>
+                      <span className="text-xs text-slate-400 dark:text-neutral-500">
+                        {selectedNotification.timestamp}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setSelectedNotification(null)}
+                  className={`p-1.5 rounded-xl transition-colors cursor-pointer ${
+                    isDark ? 'hover:bg-neutral-800 text-neutral-400 hover:text-white' : 'hover:bg-slate-200 text-slate-500 hover:text-slate-900'
+                  }`}
+                  title="Đóng"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-5 sm:p-6 space-y-4">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug">
+                    {selectedNotification.title}
+                  </h3>
+                  <p className={`mt-2.5 text-xs sm:text-sm leading-relaxed ${
+                    isDark ? 'text-neutral-300' : 'text-slate-600'
+                  }`}>
+                    {selectedNotification.message}
                   </p>
+                </div>
 
-                  <div className="flex items-center gap-3 pt-1 text-[11px] text-slate-400 dark:text-neutral-500">
-                    <span>{item.timestamp}</span>
-
-                    {item.linkTab && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onMarkAsRead(item.id);
-                          onNavigate(item.linkTab!);
-                        }}
-                        className="inline-flex items-center gap-1 font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
-                      >
-                        <span>Đi tới trang</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </button>
-                    )}
+                {/* Target Information Card */}
+                <div className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+                  isDark ? 'bg-neutral-950/60 border-neutral-800 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}>
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <TargetIcon className="w-4 h-4 text-indigo-500 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[11px] text-slate-400 dark:text-neutral-400 block">Trang liên kết</span>
+                      <span className="text-xs font-bold truncate block">{target.label}</span>
+                    </div>
                   </div>
+
+                  <span className="text-[11px] text-slate-400 dark:text-neutral-500 hidden sm:inline">
+                    Bấm nút bên dưới để mở ngay
+                  </span>
                 </div>
               </div>
 
-              {/* Delete button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteNotification(item.id);
-                }}
-                title="Xoá thông báo"
-                className={`p-1.5 rounded-lg opacity-60 hover:opacity-100 transition-colors shrink-0 cursor-pointer ${
-                  isDark ? 'hover:bg-neutral-800 hover:text-rose-400' : 'hover:bg-slate-100 hover:text-rose-600'
-                }`}
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              {/* Modal Footer with Actions: Đi tới trang + Xóa thông báo + Đóng */}
+              <div className={`p-4 sm:p-5 border-t flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2.5 ${
+                isDark ? 'bg-neutral-950/70 border-neutral-800' : 'bg-slate-50/80 border-slate-200'
+              }`}>
+                {/* Nút Xóa thông báo */}
+                <button
+                  type="button"
+                  onClick={() => handleDeleteFromModal(selectedNotification)}
+                  className={`w-full sm:w-auto px-4 py-2 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                    isDark
+                      ? 'border-rose-900/60 bg-rose-950/30 text-rose-400 hover:bg-rose-900/50 hover:text-white'
+                      : 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 hover:text-rose-900'
+                  }`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Xóa thông báo</span>
+                </button>
+
+                {/* Action Controls: Đóng & Đi tới trang */}
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedNotification(null)}
+                    className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl border text-xs font-semibold transition-colors cursor-pointer ${
+                      isDark
+                        ? 'border-neutral-800 bg-neutral-900 text-neutral-300 hover:bg-neutral-800 hover:text-white'
+                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-100'
+                    }`}
+                  >
+                    Đóng
+                  </button>
+
+                  {/* Nút Đi tới trang */}
+                  <button
+                    type="button"
+                    onClick={() => handleGoToPage(selectedNotification)}
+                    className="flex-1 sm:flex-initial px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <span>Đi tới {target.label}</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
