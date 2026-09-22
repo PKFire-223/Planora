@@ -22,6 +22,12 @@ export interface CourseItem {
   materials?: { id: string; name: string; type: 'slide' | 'pdf' | 'link' | 'code'; url?: string; size?: string }[];
 }
 
+export interface TaskSubtaskItem {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface TaskItem {
   id: string;
   courseId?: string;
@@ -32,6 +38,10 @@ export interface TaskItem {
   dueDate: string;
   estimatedMinutes: number;
   isAiGenerated?: boolean;
+  description?: string;
+  subtasks?: TaskSubtaskItem[];
+  notes?: string;
+  createdAt?: string;
 }
 
 export interface NoteItem {
@@ -47,11 +57,15 @@ export interface NoteItem {
 export interface GoalItem {
   id: string;
   title: string;
+  description?: string;
+  category?: string;
   targetDate: string;
   targetValue: number;
   currentValue: number;
   unit: string;
   status: 'active' | 'achieved' | 'missed';
+  priority?: 'low' | 'medium' | 'high';
+  createdAt?: string;
 }
 
 export interface ErrorReportItem {
@@ -247,7 +261,15 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'high',
     status: 'done',
     dueDate: '2026-09-22',
-    estimatedMinutes: 45
+    estimatedMinutes: 45,
+    description: 'Xây dựng Mongoose Schema với các validation rules nghiêm ngặt cho Model Course và Lesson. Đảm bảo ràng buộc các trường bắt buộc, kiểu dữ liệu, index hiệu năng cho code môn học.',
+    subtasks: [
+      { id: 'st-1-1', title: 'Định nghĩa CourseSchema với timestamps và indexing cho trường code', completed: true },
+      { id: 'st-1-2', title: 'Nhúng LessonSubdocumentSchema và kiểm tra min/max duration', completed: true },
+      { id: 'st-1-3', title: 'Thêm pre-save middleware tự động tính progress dựa trên completedLessons', completed: true }
+    ],
+    notes: 'Tham khảo tài liệu Mongoose v8. Cần export model an toàn để tránh OverwriteModelError khi server restart.',
+    createdAt: '2026-09-20'
   },
   {
     id: 'task-2',
@@ -257,7 +279,15 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'urgent',
     status: 'in_progress',
     dueDate: '2026-09-23',
-    estimatedMinutes: 60
+    estimatedMinutes: 60,
+    description: 'Xây dựng middleware Express xử lý tập trung tất cả các ngoại lệ, phân loại CastError, ValidationError của Mongoose và trả về HTTP 400 cùng chi tiết từng trường bị lỗi một cách thân thiện.',
+    subtasks: [
+      { id: 'st-2-1', title: 'Bắt CastError khi ID người dùng/khoá học không đúng định dạng ObjectId', completed: true },
+      { id: 'st-2-2', title: 'Duyệt qua Object.values(err.errors) để map thông báo lỗi tiếng Việt dễ hiểu', completed: false },
+      { id: 'st-2-3', title: 'Đăng ký errorHandler ở cuối pipeline Express app sau tất cả các routes', completed: false }
+    ],
+    notes: 'Đảm bảo không lộ stack trace ra môi trường production để bảo mật thông tin máy chủ.',
+    createdAt: '2026-09-21'
   },
   {
     id: 'task-3',
@@ -267,7 +297,15 @@ export const INITIAL_TASKS: TaskItem[] = [
     priority: 'medium',
     status: 'todo',
     dueDate: '2026-09-25',
-    estimatedMinutes: 90
+    estimatedMinutes: 90,
+    description: 'Luyện tập giải quyết bài toán tìm đường đi ngắn nhất với đồ thị có hướng và đồ thị có cạnh trọng số âm trên nền tảng LeetCode. Viết ghi chú phân tích độ phức tạp thời gian và không gian.',
+    subtasks: [
+      { id: 'st-3-1', title: 'LeetCode 743 - Network Delay Time (Dijkstra với Priority Queue Min-Heap)', completed: false },
+      { id: 'st-3-2', title: 'LeetCode 787 - Cheapest Flights Within K Stops (Bellman-Ford / BFS có memo)', completed: false },
+      { id: 'st-3-3', title: 'LeetCode 1514 - Path with Maximum Probability (Dijkstra với Max-Heap xác suất)', completed: false }
+    ],
+    notes: 'Sử dụng PriorityQueue từ cấu trúc dữ liệu tối ưu để đạt độ phức tạp O((V + E) log V).',
+    createdAt: '2026-09-21'
   },
   {
     id: 'task-4',
@@ -276,7 +314,15 @@ export const INITIAL_TASKS: TaskItem[] = [
     status: 'todo',
     dueDate: '2026-09-26',
     estimatedMinutes: 40,
-    isAiGenerated: true
+    isAiGenerated: true,
+    description: 'Sử dụng @google/genai SDK để tạo endpoint `/api/ai/ask` và tính năng tóm tắt giáo trình, tự động chia nhỏ bài tập phức tạp thành các bước hành động cụ thể.',
+    subtasks: [
+      { id: 'st-4-1', title: 'Cấu hình GoogleGenAI client với API key từ process.env.GEMINI_API_KEY', completed: true },
+      { id: 'st-4-2', title: 'Thiết kế system instructions và prompt template phân tách nhiệm vụ thành JSON', completed: false },
+      { id: 'st-4-3', title: 'Tích hợp giao diện AI Assistant với khả năng lưu hội thoại vào local storage', completed: false }
+    ],
+    notes: 'Sử dụng model gemini-2.5-flash cho tốc độ phản hồi nhanh và chi phí token tối ưu nhất.',
+    createdAt: '2026-09-21'
   }
 ];
 
@@ -305,29 +351,41 @@ export const INITIAL_GOALS: GoalItem[] = [
   {
     id: 'goal-1',
     title: 'Hoàn thành 50 giờ tự học có tập trung trong tháng',
+    description: 'Áp dụng phương pháp Pomodoro 25/5 mỗi ngày, tập trung học các môn kỹ thuật chuyên sâu và làm bài tập thực hành.',
+    category: 'Kỷ luật & Tập trung',
+    priority: 'high',
     targetDate: '2026-09-30',
     targetValue: 50,
-    currentValue: 36,
+    currentValue: 41,
     unit: 'giờ',
-    status: 'active'
+    status: 'active',
+    createdAt: '2026-09-01'
   },
   {
     id: 'goal-2',
     title: 'Hoàn thành 2 khoá học chuyên sâu về Backend & DSA',
+    description: 'Nghiên cứu kiến trúc Microservices Node.js và hoàn thành các bài tập nâng cao về Cây Nhị Phân và Đồ Thị.',
+    category: 'Học tập',
+    priority: 'high',
     targetDate: '2026-10-15',
     targetValue: 2,
     currentValue: 1,
     unit: 'khoá',
-    status: 'active'
+    status: 'active',
+    createdAt: '2026-09-05'
   },
   {
     id: 'goal-3',
     title: 'Giải quyết 40 bài tập thuật toán',
+    description: 'Giải các bài toán LeetCode Medium về Quy hoạch động (Dynamic Programming), Hai con trỏ và DFS/BFS.',
+    category: 'Thuật toán & Kỹ năng',
+    priority: 'medium',
     targetDate: '2026-10-01',
     targetValue: 40,
-    currentValue: 28,
+    currentValue: 29,
     unit: 'bài tập',
-    status: 'active'
+    status: 'active',
+    createdAt: '2026-09-10'
   }
 ];
 

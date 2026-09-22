@@ -290,7 +290,7 @@ export function CourseDetailModal({
               }`}
             >
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Tasks & Deadline</span>
+              <span>Nhiệm Vụ & Hạn Chót</span>
             </button>
 
             <button

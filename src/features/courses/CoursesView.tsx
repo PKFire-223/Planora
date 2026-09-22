@@ -331,17 +331,28 @@ export function CoursesView({
                     <span>Giảng viên: <strong>{course.instructor || 'Chưa phân công'}</strong></span>
                   </p>
 
-                  {/* Schedule & Location Line */}
+                  {/* Schedule & Location Line with direct link to Timetable */}
                   {(hasSchedule || hasRoom) && (
-                    <div className={`p-2.5 rounded-xl text-xs mb-3 flex items-center gap-2 border ${
-                      isDark ? 'bg-neutral-950/60 border-neutral-800/80 text-neutral-300' : 'bg-slate-50 border-slate-200 text-slate-700'
-                    }`}>
-                      <Calendar className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                      <div className="truncate">
-                        {hasSchedule && <span>{course.schedule}</span>}
-                        {hasSchedule && hasRoom && <span className="mx-1.5 opacity-50">•</span>}
-                        {hasRoom && <span className="font-medium">{course.room}</span>}
+                    <div
+                      onClick={() => onNavigateToTab?.('timetable', { courseId: course.id, courseCode: course.code })}
+                      title="Bấm để xem lịch học trên Thời Khóa Biểu"
+                      className={`p-2.5 rounded-xl text-xs mb-3 flex items-center justify-between gap-2 border transition-all cursor-pointer group ${
+                        isDark 
+                          ? 'bg-neutral-950/60 border-neutral-800/80 text-neutral-300 hover:border-indigo-500/50 hover:bg-neutral-900/60' 
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-indigo-400 hover:bg-indigo-50/40'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 truncate min-w-0">
+                        <Calendar className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                        <div className="truncate">
+                          {hasSchedule && <span className="font-semibold">{course.schedule}</span>}
+                          {hasSchedule && hasRoom && <span className="mx-1.5 opacity-50">•</span>}
+                          {hasRoom && <span className="font-medium">{course.room}</span>}
+                        </div>
                       </div>
+                      <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 shrink-0 opacity-80 group-hover:opacity-100 flex items-center gap-0.5">
+                        Xem TKB →
+                      </span>
                     </div>
                   )}
 

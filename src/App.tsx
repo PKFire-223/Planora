@@ -137,6 +137,13 @@ export default function App() {
     }
   };
 
+  const handleUpdateTask = async (id: string, data: Partial<Task>) => {
+    const res = await api.updateTask(id, data);
+    if (res.success) {
+      setTasks(prev => prev.map(t => t.id === id ? res.data : t));
+    }
+  };
+
   const handleToggleTask = async (id: string, currentStatus: Task['status']) => {
     const nextStatus = currentStatus === 'done' ? 'todo' : 'done';
     const res = await api.updateTaskStatus(id, nextStatus);
@@ -167,6 +174,13 @@ export default function App() {
     }
   };
 
+  const handleUpdateNote = async (id: string, data: Partial<Note>) => {
+    const res = await api.updateNote(id, data);
+    if (res.success) {
+      setNotes(prev => prev.map(n => n.id === id ? res.data : n));
+    }
+  };
+
   const handleDeleteNote = async (id: string) => {
     const res = await api.deleteNote(id);
     if (res.success) {
@@ -175,8 +189,36 @@ export default function App() {
   };
 
   // Goal handlers
+  const handleCreateGoal = async (data: Partial<Goal>) => {
+    const res = await api.createGoal(data);
+    if (res.success) {
+      setGoals(prev => [res.data, ...prev]);
+    }
+  };
+
+  const handleUpdateGoal = async (id: string, data: Partial<Goal>) => {
+    const res = await api.updateGoal(id, data);
+    if (res.success) {
+      setGoals(prev => prev.map(g => g.id === id ? res.data : g));
+    }
+  };
+
+  const handleDeleteGoal = async (id: string) => {
+    const res = await api.deleteGoal(id);
+    if (res.success) {
+      setGoals(prev => prev.filter(g => g.id !== id));
+    }
+  };
+
   const handleIncrementGoal = async (id: string, amount: number) => {
     const res = await api.updateGoalProgress(id, amount);
+    if (res.success) {
+      setGoals(prev => prev.map(g => g.id === id ? res.data : g));
+    }
+  };
+
+  const handleUpdateGoalProgress = async (id: string, params: { increment?: number; currentValue?: number }) => {
+    const res = await api.updateGoalProgress(id, params);
     if (res.success) {
       setGoals(prev => prev.map(g => g.id === id ? res.data : g));
     }
@@ -309,6 +351,7 @@ export default function App() {
                   tasks={tasks}
                   courses={courses}
                   onCreateTask={handleCreateTask}
+                  onUpdateTask={handleUpdateTask}
                   onToggleTask={handleToggleTask}
                   onDeleteTask={handleDeleteTask}
                   onAiBreakdown={handleAiBreakdown}
@@ -319,7 +362,9 @@ export default function App() {
               {activeTab === 'notes' && (
                 <NotesView
                   notes={notes}
+                  courses={courses}
                   onCreateNote={handleCreateNote}
+                  onUpdateNote={handleUpdateNote}
                   onDeleteNote={handleDeleteNote}
                   initialSearchTerm={crossContext.courseCode}
                 />
@@ -328,7 +373,11 @@ export default function App() {
               {activeTab === 'goals' && (
                 <GoalsView
                   goals={goals}
+                  onCreateGoal={handleCreateGoal}
+                  onUpdateGoal={handleUpdateGoal}
+                  onDeleteGoal={handleDeleteGoal}
                   onIncrementGoal={handleIncrementGoal}
+                  onUpdateProgress={handleUpdateGoalProgress}
                 />
               )}
 

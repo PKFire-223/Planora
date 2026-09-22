@@ -262,10 +262,33 @@ export const api = {
           status: data.status || 'todo',
           dueDate: data.dueDate || new Date().toISOString().split('T')[0],
           estimatedMinutes: data.estimatedMinutes || 30,
-          isAiGenerated: data.isAiGenerated || false
+          isAiGenerated: data.isAiGenerated || false,
+          description: data.description || '',
+          subtasks: data.subtasks || [],
+          notes: data.notes || '',
+          createdAt: new Date().toISOString().split('T')[0]
         };
         localTasks.unshift(newTask);
         return { success: true, data: newTask };
+      }
+    );
+  },
+
+  async updateTask(id: string, data: Partial<Task>): Promise<{ success: boolean; data: Task }> {
+    return request(
+      `/api/tasks/${id}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      () => {
+        const idx = localTasks.findIndex(t => t.id === id);
+        if (idx !== -1) {
+          localTasks[idx] = { ...localTasks[idx], ...data };
+          return { success: true, data: localTasks[idx] };
+        }
+        throw new Error('Nhiệm vụ không tồn tại');
       }
     );
   },
@@ -344,6 +367,29 @@ export const api = {
     );
   },
 
+  async updateNote(id: string, data: Partial<Note>): Promise<{ success: boolean; data: Note }> {
+    return request(
+      `/api/notes/${id}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      () => {
+        const idx = localNotes.findIndex(n => n.id === id);
+        if (idx !== -1) {
+          localNotes[idx] = {
+            ...localNotes[idx],
+            ...data,
+            updatedAt: new Date().toISOString().split('T')[0]
+          };
+          return { success: true, data: localNotes[idx] };
+        }
+        throw new Error('Ghi chú không tồn tại');
+      }
+    );
+  },
+
   async deleteNote(id: string): Promise<{ success: boolean }> {
     return request(
       `/api/notes/${id}`,
@@ -363,24 +409,105 @@ export const api = {
     }));
   },
 
-  async updateGoalProgress(id: string, increment: number): Promise<{ success: boolean; data: Goal }> {
+  async createGoal(data: Partial<Goal>): Promise<{ success: boolean; data: Goal }> {
+    return request(
+      '/api/goals',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      () => {
+        const targetVal = Number(data.targetValue) || 10;
+        const currentVal = Number(data.currentValue) || 0;
+        const newGoal: Goal = {
+          id: `goal-${Date.now()}`,
+          title: data.title || 'Mục tiêu mới',
+          description: data.description || '',
+          category: data.category || 'Học tập',
+          targetDate: data.targetDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          targetValue: targetVal,
+          currentValue: currentVal,
+          unit: data.unit || 'giờ',
+          status: data.status || (currentVal >= targetVal ? 'achieved' : 'active'),
+          priority: data.priority || 'medium',
+          createdAt: new Date().toISOString().split('T')[0]
+        };
+        localGoals.unshift(newGoal);
+        return { success: true, data: newGoal };
+      }
+    );
+  },
+
+  async updateGoal(id: string, data: Partial<Goal>): Promise<{ success: boolean; data: Goal }> {
+    return request(
+      `/api/goals/${id}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      },
+      () => {
+        const idx = localGoals.findIndex(g => g.id === id);
+        if (idx !== -1) {
+          const targetVal = data.targetValue !== undefined ? Number(data.targetValue) : localGoals[idx].targetValue;
+          const currentVal = data.currentValue !== undefined ? Number(data.currentValue) : localGoals[idx].currentValue;
+          let status = data.status || localGoals[idx].status;
+          if (data.status === undefined) {
+            status = currentVal >= targetVal ? 'achieved' : 'active';
+          }
+
+          localGoals[idx] = {
+            ...localGoals[idx],
+            ...data,
+            targetValue: targetVal,
+            currentValue: currentVal,
+            status
+          };
+          return { success: true, data: localGoals[idx] };
+        }
+        throw new Error('Mục tiêu không tồn tại');
+      }
+    );
+  },
+
+  async deleteGoal(id: string): Promise<{ success: boolean }> {
+    return request(
+      `/api/goals/${id}`,
+      { method: 'DELETE' },
+      () => {
+        localGoals = localGoals.filter(g => g.id !== id);
+        return { success: true };
+      }
+    );
+  },
+
+  async updateGoalProgress(
+    id: string, 
+    params: { increment?: number; currentValue?: number } | number
+  ): Promise<{ success: boolean; data: Goal }> {
+    const payload = typeof params === 'number' ? { increment: params } : params;
     return request(
       `/api/goals/${id}/progress`,
       {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ increment })
+        body: JSON.stringify(payload)
       },
       () => {
         const idx = localGoals.findIndex(g => g.id === id);
         if (idx !== -1) {
-          const updated = {
-            ...localGoals[idx],
-            currentValue: localGoals[idx].currentValue + increment
-          };
-          if (updated.currentValue >= updated.targetValue) {
-            updated.status = 'achieved';
+          let newCurrent = localGoals[idx].currentValue;
+          if (payload.currentValue !== undefined) {
+            newCurrent = Math.max(0, payload.currentValue);
+          } else if (payload.increment !== undefined) {
+            newCurrent = Math.max(0, newCurrent + payload.increment);
           }
+          const updated: Goal = {
+            ...localGoals[idx],
+            currentValue: newCurrent,
+            status: newCurrent >= localGoals[idx].targetValue ? 'achieved' : 'active'
+          };
           localGoals[idx] = updated;
           return { success: true, data: updated };
         }

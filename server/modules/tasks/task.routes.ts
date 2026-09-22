@@ -19,9 +19,9 @@ taskRouter.get('/', (req: Request, res: Response) => {
 
 // POST create task
 taskRouter.post('/', (req: Request, res: Response) => {
-  const { title, courseId, priority, dueDate, estimatedMinutes, isAiGenerated } = req.body;
+  const { title, courseId, priority, dueDate, estimatedMinutes, isAiGenerated, description, subtasks, notes } = req.body;
   if (!title) {
-    throw ApiError.badRequest('Tên nhiệm vụ/bài tập là bắt buộc');
+    throw ApiError.badRequest('Tên nhiệm vụ là bắt buộc');
   }
 
   let courseName = undefined;
@@ -39,11 +39,40 @@ taskRouter.post('/', (req: Request, res: Response) => {
     status: 'todo' as const,
     dueDate: dueDate || new Date().toISOString().split('T')[0],
     estimatedMinutes: Number(estimatedMinutes) || 30,
-    isAiGenerated: Boolean(isAiGenerated)
+    isAiGenerated: Boolean(isAiGenerated),
+    description: description || '',
+    subtasks: Array.isArray(subtasks) ? subtasks : [],
+    notes: notes || '',
+    createdAt: new Date().toISOString().split('T')[0]
   };
 
   memoryStore.tasks.unshift(newTask);
   res.status(201).json({ success: true, data: newTask });
+});
+
+// PATCH / PUT update task
+taskRouter.patch('/:id', (req: Request, res: Response) => {
+  const task = memoryStore.tasks.find(t => t.id === req.params.id);
+  if (!task) {
+    throw ApiError.notFound('Không tìm thấy nhiệm vụ');
+  }
+
+  const { title, courseId, priority, status, dueDate, estimatedMinutes, description, subtasks, notes } = req.body;
+  if (title !== undefined) task.title = title;
+  if (priority !== undefined) task.priority = priority;
+  if (status !== undefined) task.status = status;
+  if (dueDate !== undefined) task.dueDate = dueDate;
+  if (estimatedMinutes !== undefined) task.estimatedMinutes = Number(estimatedMinutes);
+  if (description !== undefined) task.description = description;
+  if (subtasks !== undefined) task.subtasks = subtasks;
+  if (notes !== undefined) task.notes = notes;
+  if (courseId !== undefined) {
+    task.courseId = courseId;
+    const matched = memoryStore.courses.find(c => c.id === courseId);
+    task.courseName = matched ? matched.code : undefined;
+  }
+
+  res.json({ success: true, data: task });
 });
 
 // PATCH task status

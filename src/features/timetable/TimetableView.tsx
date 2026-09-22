@@ -1,26 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, 
   Clock, 
   MapPin, 
   Plus, 
   Trash2, 
-  GripVertical, 
   Sun, 
   Sunset, 
   X, 
   Search, 
-  CalendarDays,
-  PanelLeftClose,
-  PanelLeftOpen,
-  AlertCircle
+  PanelLeftClose, 
+  PanelLeftOpen, 
+  AlertCircle,
+  RefreshCw,
+  GraduationCap,
+  CheckCircle2,
+  ExternalLink
 } from 'lucide-react';
-import { TimetableEntry, DayOfWeek, DaySession } from '../../types';
+import { TimetableEntry, DayOfWeek, DaySession, Course, ActiveTab } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { FALLBACK_TIMETABLE } from '../../data/fallbackData';
+import { 
+  syncCoursesToTimetable, 
+  formatCourseSchedule, 
+  parseCourseSchedule, 
+  mapCourseColor 
+} from '../../utils/courseTimetableSync';
 
 interface TimetableViewProps {
+  courses?: Course[];
+  onUpdateCourse?: (id: string, data: Partial<Course>) => Promise<void>;
   onNavigateToCourses?: () => void;
+  onNavigateToTab?: (tab: ActiveTab, context?: { courseId?: string; courseCode?: string; aiPrompt?: string }) => void;
+  initialHighlightCourseId?: string;
 }
 
 const DAYS: { key: DayOfWeek; label: string; fullLabel: string }[] = [
@@ -43,7 +55,7 @@ function parseTimeString(timeStr?: string): {
   endMinute: string;
 } {
   if (!timeStr) {
-    return { startHour: '07', startMinute: '00', endHour: '09', endMinute: '15' };
+    return { startHour: '07', startMinute: '30', endHour: '09', endMinute: '30' };
   }
   const parts = timeStr.split('-').map(s => s.trim());
   const parsePart = (val: string | undefined, defH: string, defM: string) => {
@@ -56,8 +68,8 @@ function parseTimeString(timeStr?: string): {
     }
     return { h: defH, m: defM };
   };
-  const start = parsePart(parts[0], '07', '00');
-  const end = parsePart(parts[1], '09', '15');
+  const start = parsePart(parts[0], '07', '30');
+  const end = parsePart(parts[1], '09', '30');
   return {
     startHour: start.h,
     startMinute: start.m,
@@ -72,24 +84,36 @@ function formatRoom(room?: string): string {
   return cleaned || room;
 }
 
-export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
+export function TimetableView({ 
+  courses = [], 
+  onUpdateCourse, 
+  onNavigateToCourses,
+  onNavigateToTab,
+  initialHighlightCourseId 
+}: TimetableViewProps) {
   const { isDark } = useTheme();
 
+  // Load timetable from localStorage or fallback, and immediately sync with courses
   const [timetable, setTimetable] = useState<TimetableEntry[]>(() => {
     try {
       const saved = localStorage.getItem('planora_timetable');
-      return saved ? JSON.parse(saved) : FALLBACK_TIMETABLE;
+      const base = saved ? JSON.parse(saved) : FALLBACK_TIMETABLE;
+      const synced = courses.length > 0 ? syncCoursesToTimetable(courses, base) : base;
+      try {
+        localStorage.setItem('planora_timetable', JSON.stringify(synced));
+      } catch {}
+      return synced;
     } catch {
       return FALLBACK_TIMETABLE;
     }
   });
 
-  // Panel collapse toggle for easy screenshot capture
+  // Panel collapse toggle
   const [isPoolOpen, setIsPoolOpen] = useState(true);
 
   // Search & Filter for left panel
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterTab, setFilterTab] = useState<'unassigned' | 'all'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'unassigned'>('all');
 
   // Drag state
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -98,6 +122,8 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
 
   // Max 4 subjects per session warning alert
   const [slotLimitAlert, setSlotLimitAlert] = useState<string | null>(null);
+  const [syncToast, setSyncToast] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const triggerLimitAlert = (msg: string) => {
     setSlotLimitAlert(msg);
@@ -106,21 +132,53 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
     }, 4000);
   };
 
+  const triggerSyncToast = (msg: string) => {
+    setSyncToast(msg);
+    setTimeout(() => {
+      setSyncToast(null);
+    }, 3500);
+  };
+
+  // Synchronize courses whenever courses prop updates
+  useEffect(() => {
+    if (courses && courses.length > 0) {
+      setTimetable(prev => syncCoursesToTimetable(courses, prev));
+    }
+  }, [courses]);
+
+  // Manual Synchronize button handler
+  const handleManualSync = () => {
+    setIsSyncing(true);
+    setTimeout(() => {
+      setTimetable(prev => {
+        const synced = syncCoursesToTimetable(courses, prev);
+        try {
+          localStorage.setItem('planora_timetable', JSON.stringify(synced));
+        } catch {}
+        return synced;
+      });
+      setIsSyncing(false);
+      triggerSyncToast(`Đã đồng bộ ${courses.length} môn học với Thời Khóa Biểu thành công!`);
+    }, 400);
+  };
+
   // Modal / Form state for Add or Edit
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<TimetableEntry | null>(null);
 
-  // Form inputs (strictly 24-hour 00-23 and 00-59, no AM/PM)
+  // Form inputs
+  const [formCourseId, setFormCourseId] = useState<string>('');
   const [formName, setFormName] = useState('');
   const [formStartHour, setFormStartHour] = useState('07');
-  const [formStartMinute, setFormStartMinute] = useState('00');
+  const [formStartMinute, setFormStartMinute] = useState('30');
   const [formEndHour, setFormEndHour] = useState('09');
-  const [formEndMinute, setFormEndMinute] = useState('15');
+  const [formEndMinute, setFormEndMinute] = useState('30');
   const [formRoom, setFormRoom] = useState('');
   const [formInstructor, setFormInstructor] = useState('');
   const [formNotes, setFormNotes] = useState('');
   const [formDay, setFormDay] = useState<DayOfWeek | ''>('');
   const [formSession, setFormSession] = useState<DaySession>('morning');
+  const [formSyncToCourse, setFormSyncToCourse] = useState<boolean>(true);
   const [formError, setFormError] = useState<string | null>(null);
 
   // Quick Assign Dropdown for Mobile / Direct Assignment
@@ -135,19 +193,45 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
     }
   }, [timetable]);
 
+  // When user selects a course from dropdown in Add/Edit modal
+  const handleSelectCourseLink = (courseId: string) => {
+    setFormCourseId(courseId);
+    if (!courseId) return;
+
+    const matchedCourse = courses.find(c => c.id === courseId);
+    if (matchedCourse) {
+      setFormName(matchedCourse.title);
+      setFormInstructor(matchedCourse.instructor || '');
+      setFormRoom(formatRoom(matchedCourse.room) || '');
+
+      if (matchedCourse.schedule) {
+        const parsed = parseCourseSchedule(matchedCourse.schedule);
+        if (parsed.day) setFormDay(parsed.day);
+        if (parsed.session) setFormSession(parsed.session);
+        const timeParsed = parseTimeString(parsed.time);
+        setFormStartHour(timeParsed.startHour);
+        setFormStartMinute(timeParsed.startMinute);
+        setFormEndHour(timeParsed.endHour);
+        setFormEndMinute(timeParsed.endMinute);
+      }
+    }
+  };
+
   // Open Modal for Create
   const handleOpenCreate = () => {
     setEditingItem(null);
+    setFormCourseId('');
     setFormName('');
     setFormStartHour('07');
-    setFormStartMinute('00');
+    setFormStartMinute('30');
     setFormEndHour('09');
-    setFormEndMinute('15');
+    setFormEndMinute('30');
     setFormRoom('');
     setFormInstructor('');
     setFormNotes('');
     setFormDay('');
     setFormSession('morning');
+    setFormSyncToCourse(true);
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -155,6 +239,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
   // Open Modal for Edit
   const handleOpenEdit = (item: TimetableEntry) => {
     setEditingItem(item);
+    setFormCourseId(item.courseId || '');
     setFormName(item.name);
     const parsed = parseTimeString(item.time);
     setFormStartHour(parsed.startHour);
@@ -166,12 +251,13 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
     setFormNotes(item.notes || '');
     setFormDay(item.day || '');
     setFormSession(item.session || 'morning');
+    setFormSyncToCourse(true);
     setFormError(null);
     setIsModalOpen(true);
   };
 
   // Handle Save Form
-  const handleSaveForm = (e: React.FormEvent) => {
+  const handleSaveForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName.trim()) return;
 
@@ -187,18 +273,22 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
 
     const formattedTime = `${formStartHour}:${formStartMinute} - ${formEndHour}:${formEndMinute}`;
     const cleanedRoom = formatRoom(formRoom);
+    const linkedCourse = courses.find(c => c.id === formCourseId);
 
     if (editingItem) {
       setTimetable(prev => prev.map(item => {
         if (item.id === editingItem.id) {
           return {
             ...item,
+            courseId: formCourseId || item.courseId,
+            courseCode: linkedCourse?.code || item.courseCode,
+            credits: linkedCourse?.credits || item.credits,
             name: formName.trim(),
             time: formattedTime,
             room: cleanedRoom || undefined,
             instructor: formInstructor.trim() || undefined,
             notes: formNotes.trim() || undefined,
-            color: 'indigo',
+            color: linkedCourse?.color ? mapCourseColor(linkedCourse.color) : item.color,
             day: formDay ? formDay : undefined,
             session: formDay ? formSession : undefined
           };
@@ -208,16 +298,29 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
     } else {
       const newItem: TimetableEntry = {
         id: `tt-${Date.now()}`,
+        courseId: formCourseId || undefined,
+        courseCode: linkedCourse?.code,
+        credits: linkedCourse?.credits,
         name: formName.trim(),
         time: formattedTime,
         room: cleanedRoom || undefined,
         instructor: formInstructor.trim() || undefined,
         notes: formNotes.trim() || undefined,
-        color: 'indigo',
+        color: linkedCourse?.color ? mapCourseColor(linkedCourse.color) : 'indigo',
         day: formDay ? formDay : undefined,
         session: formDay ? formSession : undefined
       };
       setTimetable(prev => [newItem, ...prev]);
+    }
+
+    // Bidirectional sync back to Course if linked
+    if (formCourseId && formSyncToCourse && onUpdateCourse) {
+      const newSchedule = formDay ? formatCourseSchedule(formDay, formattedTime) : '';
+      await onUpdateCourse(formCourseId, {
+        schedule: newSchedule,
+        room: cleanedRoom || undefined,
+        instructor: formInstructor.trim() || undefined
+      });
     }
 
     setIsModalOpen(false);
@@ -232,6 +335,9 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
   const handleUnassign = (id: string) => {
     setTimetable(prev => prev.map(item => {
       if (item.id === id) {
+        if (item.courseId && onUpdateCourse) {
+          onUpdateCourse(item.courseId, { schedule: '' });
+        }
         return { ...item, day: undefined, session: undefined };
       }
       return item;
@@ -247,6 +353,10 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
     }
     setTimetable(prev => prev.map(item => {
       if (item.id === id) {
+        if (item.courseId && onUpdateCourse) {
+          const newSchedule = formatCourseSchedule(day, item.time);
+          onUpdateCourse(item.courseId, { schedule: newSchedule, room: item.room });
+        }
         return { ...item, day, session };
       }
       return item;
@@ -265,24 +375,19 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
   const handleDragEnd = () => {
     setDraggedId(null);
     setDragOverTarget(null);
-    setTimeout(() => setIsDraggingNow(false), 150);
+    setIsDraggingNow(false);
   };
 
   const handleDragOver = (e: React.DragEvent, targetKey: string, day: DayOfWeek, session: DaySession) => {
     e.preventDefault();
-    const id = draggedId;
-    const currentCount = timetable.filter(item => item.day === day && item.session === session && item.id !== id).length;
-    if (currentCount >= 4) {
-      e.dataTransfer.dropEffect = 'none';
-    } else {
-      e.dataTransfer.dropEffect = 'move';
-    }
+    e.dataTransfer.dropEffect = 'move';
     if (dragOverTarget !== targetKey) {
       setDragOverTarget(targetKey);
     }
   };
 
   const handleDragLeave = (e: React.DragEvent, targetKey: string) => {
+    e.preventDefault();
     if (dragOverTarget === targetKey) {
       setDragOverTarget(null);
     }
@@ -290,63 +395,66 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
 
   const handleDrop = (e: React.DragEvent, day: DayOfWeek, session: DaySession) => {
     e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain') || draggedId;
-    if (!id) return;
+    setDragOverTarget(null);
+    if (!draggedId) return;
 
-    const currentCount = timetable.filter(item => item.day === day && item.session === session && item.id !== id).length;
-    if (currentCount >= 4) {
-      triggerLimitAlert('Một buổi chỉ xếp tối đa 4 môn học, không thể kéo thêm vào!');
+    const itemsInTarget = timetable.filter(
+      item => item.day === day && item.session === session && item.id !== draggedId
+    );
+
+    if (itemsInTarget.length >= 4) {
+      triggerLimitAlert(`Buổi này đã đủ tối đa 4 môn học, không thể xếp thêm!`);
       setDraggedId(null);
-      setDragOverTarget(null);
+      setIsDraggingNow(false);
       return;
     }
 
     setTimetable(prev => prev.map(item => {
-      if (item.id === id) {
+      if (item.id === draggedId) {
+        if (item.courseId && onUpdateCourse) {
+          const newSchedule = formatCourseSchedule(day, item.time);
+          onUpdateCourse(item.courseId, { schedule: newSchedule, room: item.room });
+        }
         return { ...item, day, session };
       }
       return item;
     }));
 
     setDraggedId(null);
-    setDragOverTarget(null);
+    setIsDraggingNow(false);
   };
 
-  const handleDropToPool = (e: React.DragEvent) => {
-    e.preventDefault();
-    const id = e.dataTransfer.getData('text/plain') || draggedId;
-    if (!id) return;
+  // Left drawer filtered items
+  const filteredItems = useMemo(() => {
+    return timetable.filter(item => {
+      const matchSearch = 
+        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.room && item.room.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.courseCode && item.courseCode.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.instructor && item.instructor.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        item.time.includes(searchTerm);
 
-    handleUnassign(id);
-    setDraggedId(null);
-    setDragOverTarget(null);
-  };
+      if (!matchSearch) return false;
 
-  // Filtered left panel items
-  const filteredItems = timetable.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.room && item.room.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      item.time.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (filterTab === 'unassigned') {
-      return matchesSearch && (!item.day || !item.session);
-    }
-    return matchesSearch;
-  });
+      if (filterTab === 'unassigned') {
+        return !item.day || !item.session;
+      }
+      return true;
+    });
+  }, [timetable, searchTerm, filterTab]);
 
-  const unassignedCount = timetable.filter(item => !item.day || !item.session).length;
-  const assignedCount = timetable.length - unassignedCount;
+  const unassignedCount = timetable.filter(i => !i.day || !i.session).length;
+  const courseLinkedCount = timetable.filter(i => Boolean(i.courseId || i.courseCode)).length;
 
-  // Unified Card Style for clean, soothing reading and screenshots
-  const cardBaseStyle = isDark
-    ? 'bg-neutral-900/95 border-neutral-800 text-neutral-100 hover:border-neutral-700 shadow-2xs'
-    : 'bg-white border-slate-200 text-slate-900 hover:border-slate-300 shadow-2xs';
+  const cardBaseStyle = isDark 
+    ? 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 shadow-2xs' 
+    : 'bg-white border-slate-200 hover:border-slate-300 shadow-2xs';
 
-  // Render a cell inside the grid
-  const renderCellContent = (day: DayOfWeek, session: DaySession) => {
+  // Helper to render each slot on the timetable grid
+  const renderSlot = (day: DayOfWeek, session: DaySession) => {
+    const targetKey = `${day}-${session}`;
     const itemsInSlot = timetable.filter(item => item.day === day && item.session === session);
     const count = itemsInSlot.length;
-    const targetKey = `${day}-${session}`;
     const isOver = dragOverTarget === targetKey;
     const isFull = count >= 4;
 
@@ -379,8 +487,10 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
           <div className="h-full w-full flex flex-col gap-1.5 overflow-hidden">
             {itemsInSlot.map((item) => {
               const cleanRoom = formatRoom(item.room);
+              const matchedCourse = courses.find(c => c.id === item.courseId || c.code === item.courseCode);
+              const isHighlighted = initialHighlightCourseId && item.courseId === initialHighlightCourseId;
 
-              // 1 item in slot: full height, clear spacious layout showing room prominently
+              // 1 item in slot: full height, spacious layout
               if (count === 1) {
                 return (
                   <div
@@ -392,23 +502,35 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       if (!isDraggingNow) handleOpenEdit(item);
                     }}
                     title="Bấm vào để chỉnh sửa thông tin môn học"
-                    className={`h-full flex flex-col justify-between p-2.5 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle}`}
+                    className={`h-full flex flex-col justify-between p-2.5 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle} ${
+                      isHighlighted ? 'ring-2 ring-indigo-500 ring-offset-2 animate-pulse' : ''
+                    }`}
                   >
                     <div>
                       <div className="flex items-start justify-between gap-1 mb-1.5">
-                        <span className={`text-xs font-bold leading-snug line-clamp-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                          {item.name}
-                        </span>
-                        <button
-                          title="Gỡ khỏi TKB"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUnassign(item.id);
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer shrink-0"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1 flex-wrap">
+                          {item.courseCode && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 shrink-0">
+                              {item.courseCode}
+                            </span>
+                          )}
+                          <span className={`text-xs font-bold leading-snug line-clamp-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                            {item.name}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            title="Gỡ khỏi TKB"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnassign(item.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-neutral-400">
@@ -417,10 +539,9 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       </div>
                     </div>
 
-                    {/* Room is explicitly shown clearly without 'Phòng: ' and WITHOUT 'Chỉnh sửa' */}
-                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-neutral-800 text-[11px]">
+                    <div className="mt-2 pt-2 border-t border-slate-100 dark:border-neutral-800 text-[11px] flex items-center justify-between">
                       {cleanRoom ? (
-                        <div className="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400 truncate w-full">
+                        <div className="flex items-center gap-1.5 font-bold text-indigo-600 dark:text-indigo-400 truncate flex-1">
                           <MapPin className="w-3.5 h-3.5 shrink-0 text-indigo-500" />
                           <span className="truncate">{cleanRoom}</span>
                         </div>
@@ -429,12 +550,18 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                           (Chưa có phòng)
                         </span>
                       )}
+
+                      {item.instructor && (
+                        <span className="text-[10px] text-slate-400 dark:text-neutral-500 font-medium truncate max-w-[120px]" title={item.instructor}>
+                          {item.instructor}
+                        </span>
+                      )}
                     </div>
                   </div>
                 );
               }
 
-              // 2 items in slot: 50% height, time pushed UP to its own row, room on its own row below it (never on same row)
+              // 2 items in slot: 50% height
               if (count === 2) {
                 return (
                   <div
@@ -446,26 +573,36 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       if (!isDraggingNow) handleOpenEdit(item);
                     }}
                     title="Bấm vào để chỉnh sửa thông tin môn học"
-                    className={`h-[calc(50%-3px)] flex flex-col justify-between p-2 rounded-lg border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle}`}
+                    className={`h-[calc(50%-3px)] flex flex-col justify-between p-2 rounded-lg border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle} ${
+                      isHighlighted ? 'ring-2 ring-indigo-500 animate-pulse' : ''
+                    }`}
                   >
-                    {/* Hàng 1: Tên môn & nút gỡ */}
                     <div className="flex items-start justify-between gap-1">
-                      <span className={`text-[11px] font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {item.name}
-                      </span>
-                      <button
-                        title="Gỡ khỏi TKB"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnassign(item.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer shrink-0"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
+                      <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
+                        {item.courseCode && (
+                          <span className="px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shrink-0">
+                            {item.courseCode}
+                          </span>
+                        )}
+                        <span className={`text-[11px] font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {item.name}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          title="Gỡ khỏi TKB"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnassign(item.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all cursor-pointer"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
-                    {/* Đẩy giờ lên trên, phòng ở bên dưới (2 hàng riêng biệt) */}
                     <div className="space-y-1 mt-auto pt-1">
                       <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-neutral-400 font-medium">
                         <Clock className="w-3 h-3 shrink-0 text-indigo-500" />
@@ -486,7 +623,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                 );
               }
 
-              // 3 items in slot: 3 distinct rows (Name, Time, Room)
+              // 3 items in slot
               if (count === 3) {
                 return (
                   <div
@@ -501,30 +638,44 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                     className={`h-[calc(33.33%-3px)] flex flex-col justify-between px-2 py-1.5 rounded-lg border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle}`}
                   >
                     <div className="flex items-start justify-between gap-1">
-                      <p className={`text-[10px] font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                        {item.name}
-                      </p>
-                      <button
-                        title="Gỡ khỏi TKB"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUnassign(item.id);
-                        }}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-all cursor-pointer shrink-0"
-                      >
-                        <X className="w-2.5 h-2.5" />
-                      </button>
+                      <div className="flex items-center gap-1 min-w-0 flex-1 truncate">
+                        {item.courseCode && (
+                          <span className="px-1 text-[8px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 shrink-0">
+                            {item.courseCode}
+                          </span>
+                        )}
+                        <p className={`text-[10px] font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {item.name}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <button
+                          title="Gỡ khỏi TKB"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUnassign(item.id);
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-all cursor-pointer"
+                        >
+                          <X className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-0.5 mt-auto">
                       <div className="flex items-center gap-1 text-[9px] text-slate-500 dark:text-neutral-400 font-medium">
-                        <Clock className="w-2.5 h-2.5 shrink-0 text-indigo-500" />
+                        <Clock className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
                         <span className="truncate">{item.time}</span>
                       </div>
-                      {cleanRoom && (
+                      {cleanRoom ? (
                         <div className="flex items-center gap-1 text-[9px] font-bold text-indigo-600 dark:text-indigo-400">
-                          <MapPin className="w-2.5 h-2.5 shrink-0 text-indigo-500" />
+                          <MapPin className="w-2.5 h-2.5 text-indigo-500 shrink-0" />
                           <span className="truncate">{cleanRoom}</span>
+                        </div>
+                      ) : (
+                        <div className="text-[8px] text-slate-400 italic pl-3.5">
+                          (Chưa phòng)
                         </div>
                       )}
                     </div>
@@ -532,7 +683,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                 );
               }
 
-              // 4 items in slot: compact strip (maximum 4 items per session)
+              // 4 items in slot
               return (
                 <div
                   key={item.id}
@@ -542,32 +693,36 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                   onClick={() => {
                     if (!isDraggingNow) handleOpenEdit(item);
                   }}
-                  title="Bấm vào để chỉnh sửa thông tin môn học"
-                  className={`h-[calc(25%-3px)] min-h-[46px] flex flex-col justify-between px-2 py-1 rounded-md border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle}`}
+                  title="Bấm vào để chỉnh sửa môn học"
+                  className={`h-[calc(25%-3px)] flex flex-col justify-between px-1.5 py-1 rounded-md border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle}`}
                 >
-                  <div className="flex items-start justify-between gap-1">
-                    <p className={`text-[10px] font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {item.name}
+                  <div className="flex items-center justify-between gap-1">
+                    <p className={`text-[9px] font-bold leading-tight truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      {item.courseCode ? `[${item.courseCode}] ` : ''}{item.name}
                     </p>
-                    <button
-                      title="Gỡ khỏi TKB"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleUnassign(item.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded transition-all cursor-pointer shrink-0"
-                    >
-                      <X className="w-2.5 h-2.5" />
-                    </button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <button
+                        title="Gỡ khỏi TKB"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleUnassign(item.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-500 rounded cursor-pointer"
+                      >
+                        <X className="w-2 h-2" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-[9px] text-slate-500 dark:text-neutral-400 truncate">
-                    <Clock className="w-2.5 h-2.5 shrink-0 text-indigo-500" />
-                    <span className="truncate">{item.time}</span>
+
+                  <div className="flex items-center justify-between text-[8px] gap-1">
+                    <span className="text-slate-500 dark:text-neutral-400 truncate flex items-center gap-0.5 font-medium">
+                      <Clock className="w-2 h-2 text-indigo-500 shrink-0" />
+                      {item.time}
+                    </span>
                     {cleanRoom && (
-                      <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate flex items-center gap-0.5 shrink-0">
-                        <span className="mx-0.5 text-slate-300 dark:text-neutral-600">•</span>
-                        <MapPin className="w-2.5 h-2.5 shrink-0 text-indigo-500" />
-                        <span className="truncate">{cleanRoom}</span>
+                      <span className="font-bold text-indigo-600 dark:text-indigo-400 truncate flex items-center gap-0.5">
+                        <MapPin className="w-2 h-2 text-indigo-500 shrink-0" />
+                        {cleanRoom}
                       </span>
                     )}
                   </div>
@@ -581,102 +736,108 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner / Actions */}
-      <div className={`p-4 sm:p-5 rounded-2xl border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-        isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
-      }`}>
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-500">
-              <CalendarDays className="w-5 h-5" />
-            </div>
-            <h2 className={`text-lg sm:text-xl font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
-              Thời Khóa Biểu & Lịch Học
-            </h2>
-          </div>
-          <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-            Kéo thả môn học vào các buổi từ T2 đến CN. Phòng học và giờ học luôn hiển thị trực quan, rõ ràng.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Toggle button to collapse left pool so timetable expands to full screen width */}
-          <button
-            onClick={() => setIsPoolOpen(!isPoolOpen)}
-            className={`px-3.5 py-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
-              isDark 
-                ? 'bg-neutral-800 border-neutral-700 text-neutral-200 hover:bg-neutral-700' 
-                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs'
-            }`}
-            title={isPoolOpen ? 'Thu gọn kho môn để mở rộng TKB' : 'Mở lại kho môn bên trái'}
-          >
-            {isPoolOpen ? (
-              <>
-                <PanelLeftClose className="w-3.5 h-3.5 text-slate-500" />
-                <span className="hidden sm:inline">Thu gọn kho môn</span>
-              </>
-            ) : (
-              <>
-                <PanelLeftOpen className="w-3.5 h-3.5 text-indigo-500" />
-                <span>Hiện kho môn</span>
-              </>
-            )}
-          </button>
-
-          {/* Add Subject Button */}
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Môn Mới</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Max 4 subjects slot limit warning alert toast */}
+    <div className="space-y-4">
+      {/* Alert / Notification banners */}
       {slotLimitAlert && (
-        <div className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-3 animate-fade-in ${
-          isDark ? 'bg-amber-950/70 border-amber-800 text-amber-200' : 'bg-amber-50 border-amber-200 text-amber-900'
-        }`}>
+        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{slotLimitAlert}</span>
+        </div>
+      )}
+
+      {syncToast && (
+        <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-amber-500 shrink-0" />
-            <span className="font-semibold">{slotLimitAlert}</span>
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-500" />
+            <span>{syncToast}</span>
           </div>
           <button 
-            onClick={() => setSlotLimitAlert(null)}
-            className="text-xs font-semibold underline cursor-pointer shrink-0"
+            onClick={() => setSyncToast(null)}
+            className="p-1 text-emerald-600 hover:text-emerald-800 cursor-pointer"
           >
-            Đóng
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
 
-      {/* Main Split Layout: Left Pool (Kho Môn) & Right Timetable Grid */}
-      <div className="flex flex-col lg:flex-row gap-5 items-start">
-        
+      {/* Main Timetable Controls Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsPoolOpen(!isPoolOpen)}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-2 transition-colors cursor-pointer ${
+              isDark 
+                ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:bg-neutral-800' 
+                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 shadow-2xs'
+            }`}
+            title={isPoolOpen ? 'Thu gọn kho môn học' : 'Mở kho môn học'}
+          >
+            {isPoolOpen ? (
+              <>
+                <PanelLeftClose className="w-4 h-4 text-indigo-500" />
+                <span>Ẩn kho môn</span>
+              </>
+            ) : (
+              <>
+                <PanelLeftOpen className="w-4 h-4 text-indigo-500" />
+                <span>Hiện kho môn ({unassignedCount})</span>
+              </>
+            )}
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
+              Đã đồng bộ: <strong className="text-indigo-600 dark:text-indigo-400">{courseLinkedCount}/{courses.length} môn học</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Action Buttons: Sync Courses & Add Subject */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+              isDark
+                ? 'bg-neutral-900 border-neutral-800 hover:bg-neutral-800 text-neutral-200'
+                : 'bg-white border-slate-200 hover:bg-slate-50 text-slate-700 shadow-2xs'
+            }`}
+            title="Đồng bộ lại tất cả môn học và lịch từ danh sách khóa học"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-indigo-500 ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>Đồng bộ từ Khóa Học</span>
+          </button>
+
+          <button
+            onClick={handleOpenCreate}
+            className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+          >
+            <Plus className="w-4 h-4" />
+            <span>+ Thêm Môn Học</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Main Workspace: Left Drawer (Pool) + Right Grid */}
+      <div className="flex flex-col lg:flex-row gap-4 items-start w-full">
         {/* ========================================================================= */}
-        {/* CỘT TRÁI: KHO MÔN HỌC (Có thể thu gọn để TKB mở rộng tối đa)              */}
+        {/* CỘT TRÁI: KHO MÔN HỌC / DANH SÁCH CHỜ XẾP                                  */}
         {/* ========================================================================= */}
         {isPoolOpen && (
-          <div 
-            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-            onDrop={handleDropToPool}
-            className={`w-full lg:w-72 shrink-0 p-4 rounded-2xl border transition-all flex flex-col ${
-              isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
-            }`}
-          >
-            {/* Header left panel */}
+          <div className={`w-full lg:w-80 shrink-0 p-4 rounded-2xl border transition-all ${
+            isDark ? 'bg-neutral-900/60 border-neutral-800' : 'bg-white border-slate-200 shadow-xs'
+          }`}>
             <div className="flex items-center justify-between mb-3">
               <div>
-                <h3 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  Kho Môn & Nội Dung
+                <h3 className="font-bold text-sm flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-indigo-500" />
+                  <span>Kho Môn Học ({timetable.length})</span>
                 </h3>
-                <p className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-                  {unassignedCount} chưa xếp • {assignedCount} đã lên TKB
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                  Kéo thả vào thứ & ca học mong muốn
                 </p>
               </div>
+
               <button
                 onClick={handleOpenCreate}
                 className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 transition-colors cursor-pointer"
@@ -691,7 +852,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
               <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Tìm môn, phòng, giờ..."
+                placeholder="Tìm môn, mã môn, phòng..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className={`w-full pl-8 pr-3 py-1.5 rounded-xl border text-xs outline-none transition-colors ${
@@ -706,7 +867,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
             <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-neutral-950 mb-3 text-xs font-semibold">
               <button
                 onClick={() => setFilterTab('all')}
-                className={`flex-1 py-1 rounded-lg transition-colors cursor-pointer ${
+                className={`flex-1 py-1 rounded-lg transition-colors cursor-pointer text-center ${
                   filterTab === 'all'
                     ? 'bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 shadow-2xs'
                     : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900'
@@ -716,7 +877,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
               </button>
               <button
                 onClick={() => setFilterTab('unassigned')}
-                className={`flex-1 py-1 rounded-lg transition-colors cursor-pointer ${
+                className={`flex-1 py-1 rounded-lg transition-colors cursor-pointer text-center ${
                   filterTab === 'unassigned'
                     ? 'bg-white dark:bg-neutral-800 text-indigo-600 dark:text-indigo-400 shadow-2xs'
                     : 'text-slate-600 dark:text-neutral-400 hover:text-slate-900'
@@ -726,17 +887,18 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
               </button>
             </div>
 
-            {/* List of Draggable Items (Clean uniform color) */}
+            {/* List of Draggable Items */}
             <div className="space-y-2 max-h-[580px] overflow-y-auto pr-1">
               {filteredItems.length === 0 ? (
                 <div className="p-6 text-center text-xs text-slate-400 dark:text-neutral-500">
-                  Không tìm thấy môn nào. Nhấn "+ Thêm Môn Mới" ở trên!
+                  Không tìm thấy môn nào. Nhấn "+ Thêm Môn Học" hoặc "Đồng bộ từ Khóa Học"!
                 </div>
               ) : (
                 filteredItems.map(item => {
                   const isAssigned = Boolean(item.day && item.session);
                   const dayObj = DAYS.find(d => d.key === item.day);
                   const sessionLabel = item.session === 'morning' ? 'Sáng' : 'Chiều';
+                  const matchedCourse = courses.find(c => c.id === item.courseId || c.code === item.courseCode);
 
                   return (
                     <div
@@ -747,13 +909,25 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       onClick={() => {
                         if (!isDraggingNow) handleOpenEdit(item);
                       }}
-                      title="Bấm để chỉnh sửa môn học"
+                      title="Kéo thả hoặc bấm để chỉnh sửa môn học"
                       className={`p-3 rounded-xl border transition-all cursor-pointer hover:scale-[1.01] active:scale-[0.99] group relative ${cardBaseStyle}`}
                     >
                       {/* Top row: Title, Actions */}
                       <div className="flex items-start justify-between gap-2 mb-1.5">
                         <div className="min-w-0 flex-1">
-                          <span className={`text-xs font-bold truncate block ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                            {item.courseCode && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                                {item.courseCode}
+                              </span>
+                            )}
+                            {item.credits && (
+                              <span className="text-[10px] font-semibold text-slate-500 dark:text-neutral-400">
+                                {item.credits} TC
+                              </span>
+                            )}
+                          </div>
+                          <span className={`text-xs font-bold block leading-snug ${isDark ? 'text-white' : 'text-slate-900'}`}>
                             {item.name}
                           </span>
                         </div>
@@ -799,54 +973,51 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                             <span>{dayObj?.label} • Buổi {sessionLabel}</span>
                           </div>
                         ) : (
-                          <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
-                            <GripVertical className="w-3 h-3" />
-                            <span>Kéo sang TKB</span>
+                          <span className="text-amber-600 dark:text-amber-400 font-medium">
+                            Chưa xếp lên TKB
                           </span>
                         )}
 
-                        {/* Quick Assign / Unassign Button */}
-                        <div className="relative" onClick={(e) => e.stopPropagation()}>
-                          {isAssigned ? (
-                            <button
-                              onClick={() => handleUnassign(item.id)}
-                              className="px-2 py-0.5 rounded text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold cursor-pointer"
-                            >
-                              Gỡ lịch
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => setAssigningId(assigningId === item.id ? null : item.id)}
-                              className="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 font-semibold cursor-pointer"
-                            >
-                              Xếp lịch ▼
-                            </button>
-                          )}
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAssigningId(assigningId === item.id ? null : item.id);
+                            }}
+                            className="px-2 py-0.5 rounded-lg border text-slate-600 dark:text-neutral-300 hover:text-indigo-600 border-slate-200 dark:border-neutral-700 hover:border-indigo-400 cursor-pointer font-semibold transition-colors"
+                          >
+                            {isAssigned ? 'Đổi ca' : 'Xếp ngay'}
+                          </button>
 
-                          {/* Quick Assign Dropdown */}
                           {assigningId === item.id && (
-                            <div className={`absolute right-0 bottom-full mb-1 z-30 w-52 p-2 rounded-xl border shadow-xl ${
-                              isDark ? 'bg-neutral-900 border-neutral-700' : 'bg-white border-slate-200'
-                            }`}>
-                              <div className="text-[11px] font-bold mb-1.5 text-slate-700 dark:text-neutral-300">
-                                Chọn buổi học:
+                            <div 
+                              onClick={(e) => e.stopPropagation()}
+                              className={`absolute right-0 bottom-full mb-1 w-52 p-2 rounded-xl shadow-xl border z-30 ${
+                                isDark ? 'bg-neutral-900 border-neutral-700' : 'bg-white border-slate-200'
+                              }`}
+                            >
+                              <div className="text-[11px] font-bold mb-1.5 text-slate-700 dark:text-neutral-200">
+                                Chọn Buổi Để Xếp:
                               </div>
                               <div className="space-y-1 max-h-48 overflow-y-auto">
                                 {DAYS.map(d => {
-                                  const morningFull = timetable.filter(t => t.day === d.key && t.session === 'morning' && t.id !== item.id).length >= 4;
-                                  const afternoonFull = timetable.filter(t => t.day === d.key && t.session === 'afternoon' && t.id !== item.id).length >= 4;
+                                  const morningCount = timetable.filter(t => t.day === d.key && t.session === 'morning' && t.id !== item.id).length;
+                                  const afternoonCount = timetable.filter(t => t.day === d.key && t.session === 'afternoon' && t.id !== item.id).length;
+                                  const morningFull = morningCount >= 4;
+                                  const afternoonFull = afternoonCount >= 4;
+
                                   return (
-                                    <div key={d.key} className="flex items-center justify-between text-[11px] p-1 rounded hover:bg-slate-100 dark:hover:bg-neutral-800">
-                                      <span className="font-medium">{d.fullLabel}</span>
-                                      <div className="flex items-center gap-1">
+                                    <div key={d.key} className="flex items-center justify-between py-1 px-1.5 rounded hover:bg-slate-50 dark:hover:bg-neutral-800 text-[10px]">
+                                      <span className="font-semibold">{d.fullLabel}:</span>
+                                      <div className="flex gap-1">
                                         <button
                                           onClick={() => !morningFull && handleQuickAssign(item.id, d.key, 'morning')}
                                           disabled={morningFull}
-                                          title={morningFull ? 'Đã đủ 4 môn (tối đa)' : 'Xếp vào buổi Sáng'}
                                           className={`px-1.5 py-0.5 rounded font-bold transition-colors ${
                                             morningFull 
                                               ? 'bg-slate-200 dark:bg-neutral-800 text-slate-400 cursor-not-allowed'
-                                              : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 cursor-pointer'
+                                              : 'bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 cursor-pointer'
                                           }`}
                                         >
                                           {morningFull ? 'Sáng (Đầy)' : 'Sáng'}
@@ -854,7 +1025,6 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                                         <button
                                           onClick={() => !afternoonFull && handleQuickAssign(item.id, d.key, 'afternoon')}
                                           disabled={afternoonFull}
-                                          title={afternoonFull ? 'Đã đủ 4 môn (tối đa)' : 'Xếp vào buổi Chiều'}
                                           className={`px-1.5 py-0.5 rounded font-bold transition-colors ${
                                             afternoonFull 
                                               ? 'bg-slate-200 dark:bg-neutral-800 text-slate-400 cursor-not-allowed'
@@ -890,7 +1060,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
           <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-3 border-b border-slate-200 dark:border-neutral-800">
             <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-neutral-400">
               <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
-              <span>Kéo thả môn vào từng buổi học, tối đa 4 môn mỗi buổi và tự thu gọn vừa vặn.</span>
+              <span>Kéo thả môn vào từng buổi học, tối đa 4 môn mỗi buổi. Nội dung đồng bộ tự động với môn học.</span>
             </div>
 
             <div className="flex items-center gap-4 text-xs font-semibold">
@@ -905,7 +1075,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
             </div>
           </div>
 
-          {/* Grid Container with wide columns so Subject & Room never get cramped */}
+          {/* Grid Container with wide columns */}
           <div className="min-w-[1020px]">
             {/* Table Header: Ca/Buổi + 7 Days of week */}
             <div className="grid grid-cols-[105px_repeat(7,minmax(130px,1fr))] gap-2.5 mb-2.5 text-center">
@@ -920,57 +1090,57 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                 <div 
                   key={day.key}
                   className={`p-2.5 rounded-xl border text-center transition-colors ${
-                    isDark 
-                      ? 'bg-neutral-950 border-neutral-800 text-white' 
-                      : 'bg-slate-50 border-slate-200 text-slate-800'
+                    isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                   }`}
                 >
-                  <div className="text-xs font-bold">{day.label}</div>
-                  <div className={`text-[10px] font-medium ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
+                  <div className="font-extrabold text-sm text-indigo-600 dark:text-indigo-400">
+                    {day.label}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-neutral-400 font-medium">
                     {day.fullLabel}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Row 1: BUỔI SÁNG */}
-            <div className="grid grid-cols-[105px_repeat(7,minmax(130px,1fr))] gap-2.5 mb-3">
-              {/* Session indicator */}
-              <div className={`h-[195px] p-2.5 rounded-xl border flex flex-col items-center justify-center text-center gap-1.5 ${
+            {/* Table Row 1: Buổi Sáng */}
+            <div className="grid grid-cols-[105px_repeat(7,minmax(130px,1fr))] gap-2.5 mb-2.5">
+              {/* Row Header: Sáng */}
+              <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-1 ${
                 isDark 
-                  ? 'bg-neutral-950 border-neutral-800 text-amber-400' 
+                  ? 'bg-amber-950/20 border-amber-900/30 text-amber-400' 
                   : 'bg-amber-50/70 border-amber-200 text-amber-800'
               }`}>
-                <Sun className="w-6 h-6 text-amber-500" />
-                <span className="text-xs font-bold tracking-tight">BUỔI SÁNG</span>
-                <span className="text-[10px] font-medium opacity-80">07:00 - 12:00</span>
+                <Sun className="w-5 h-5 text-amber-500" />
+                <span className="font-bold text-xs">SÁNG</span>
+                <span className="text-[10px] opacity-80">07:00 - 12:00</span>
               </div>
 
-              {/* 7 Days cells for Morning */}
+              {/* 7 Days: Sáng */}
               {DAYS.map(day => (
                 <React.Fragment key={`morning-${day.key}`}>
-                  {renderCellContent(day.key, 'morning')}
+                  {renderSlot(day.key, 'morning')}
                 </React.Fragment>
               ))}
             </div>
 
-            {/* Row 2: BUỔI CHIỀU */}
+            {/* Table Row 2: Buổi Chiều */}
             <div className="grid grid-cols-[105px_repeat(7,minmax(130px,1fr))] gap-2.5">
-              {/* Session indicator */}
-              <div className={`h-[195px] p-2.5 rounded-xl border flex flex-col items-center justify-center text-center gap-1.5 ${
+              {/* Row Header: Chiều */}
+              <div className={`p-3 rounded-xl border flex flex-col items-center justify-center text-center gap-1 ${
                 isDark 
-                  ? 'bg-neutral-950 border-neutral-800 text-indigo-400' 
+                  ? 'bg-indigo-950/20 border-indigo-900/30 text-indigo-400' 
                   : 'bg-indigo-50/70 border-indigo-200 text-indigo-800'
               }`}>
-                <Sunset className="w-6 h-6 text-indigo-500" />
-                <span className="text-xs font-bold tracking-tight">BUỔI CHIỀU</span>
-                <span className="text-[10px] font-medium opacity-80">12:30 - 18:30</span>
+                <Sunset className="w-5 h-5 text-indigo-500" />
+                <span className="font-bold text-xs">CHIỀU</span>
+                <span className="text-[10px] opacity-80">12:30 - 18:30</span>
               </div>
 
-              {/* 7 Days cells for Afternoon */}
+              {/* 7 Days: Chiều */}
               {DAYS.map(day => (
                 <React.Fragment key={`afternoon-${day.key}`}>
-                  {renderCellContent(day.key, 'afternoon')}
+                  {renderSlot(day.key, 'afternoon')}
                 </React.Fragment>
               ))}
             </div>
@@ -979,36 +1149,62 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
       </div>
 
       {/* ========================================================================= */}
-      {/* MODAL: THÊM / CHỈNH SỬA MÔN HỌC & GIỜ VÀO                                 */}
+      {/* MODAL: THÊM HOẶC CHỈNH SỬA MÔN HỌC (VỚI LIÊN KẾT KHÓA HỌC)                */}
       {/* ========================================================================= */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl transition-all ${
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className={`w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden ${
             isDark ? 'bg-neutral-900 border-neutral-800 text-white' : 'bg-white border-slate-200 text-slate-900'
           }`}>
-            <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-200 dark:border-neutral-800">
-              <h3 className="text-base font-bold flex items-center gap-2">
+            <div className={`p-4 border-b flex items-center justify-between ${
+              isDark ? 'border-neutral-800 bg-neutral-950/40' : 'border-slate-100 bg-slate-50/50'
+            }`}>
+              <h3 className="font-bold text-sm flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-indigo-500" />
-                <span>{editingItem ? 'Chỉnh Sửa Môn & Giờ Học' : 'Thêm Môn / Nội Dung Mới'}</span>
+                <span>{editingItem ? 'Chỉnh Sửa Lịch Môn Học' : 'Thêm Môn Vào Thời Khóa Biểu'}</span>
               </h3>
-              <button
+              <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveForm} className="space-y-4 text-xs">
-              {/* Tên môn / Nội dung học: Không có chữ giải thích thừa gây vướng */}
+            <form onSubmit={handleSaveForm} className="p-4 space-y-3.5 text-xs">
+              {/* Linked Course Dropdown */}
+              <div>
+                <label className="block font-semibold mb-1 text-slate-700 dark:text-neutral-200 flex items-center justify-between">
+                  <span>Liên kết với Khóa Học</span>
+                  <span className="text-[11px] font-normal text-indigo-500">(Tự động đồng bộ nội dung)</span>
+                </label>
+                <select
+                  value={formCourseId}
+                  onChange={(e) => handleSelectCourseLink(e.target.value)}
+                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors cursor-pointer ${
+                    isDark 
+                      ? 'bg-neutral-950 border-neutral-800 focus:border-indigo-500 text-white' 
+                      : 'bg-slate-50 border-slate-200 focus:border-indigo-500 text-slate-900'
+                  }`}
+                >
+                  <option value="">-- Môn tự do / Hoạt động khác (Không liên kết) --</option>
+                  {courses.map(c => (
+                    <option key={c.id} value={c.id}>
+                      [{c.code}] {c.title} {c.credits ? `(${c.credits} TC)` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tên môn học */}
               <div>
                 <label className="block font-semibold mb-1 text-slate-700 dark:text-neutral-200">
-                  Tên môn / Nội dung học tập <span className="text-rose-500">*</span>
+                  Tên môn học / Hoạt động <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Kiến Trúc Microservices, Tự học thư viện, Họp đồ án..."
+                  placeholder="VD: Kiến Trúc Microservices & Node.js"
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors ${
@@ -1019,24 +1215,20 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                 />
               </div>
 
-              {/* Giờ học (0-23h không dùng AM/PM) & Phòng học (Tùy chọn) ngang hàng hoàn hảo */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
-                {/* Giờ học: 2 ô chọn 24 giờ (00-23) bắt đầu & kết thúc */}
+              {/* Giờ học & Phòng học */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold mb-1 text-slate-700 dark:text-neutral-200">
-                    Giờ học (00:00 - 23:59) <span className="text-rose-500">*</span>
+                    Khung giờ (24h)
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     {/* Bắt đầu */}
                     <div className={`flex items-center justify-between px-2.5 py-2 rounded-xl border transition-colors ${
-                      isDark 
-                        ? 'bg-neutral-950 border-neutral-800 text-white' 
-                        : 'bg-slate-50 border-slate-200 text-slate-900'
+                      isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}>
                       <select
                         value={formStartHour}
                         onChange={(e) => setFormStartHour(e.target.value)}
-                        title="Giờ bắt đầu (0-23)"
                         className="bg-transparent font-bold text-xs outline-none cursor-pointer text-slate-900 dark:text-white"
                       >
                         {HOURS_24.map(h => (
@@ -1049,7 +1241,6 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       <select
                         value={formStartMinute}
                         onChange={(e) => setFormStartMinute(e.target.value)}
-                        title="Phút bắt đầu (0-59)"
                         className="bg-transparent font-bold text-xs outline-none cursor-pointer text-slate-900 dark:text-white"
                       >
                         {MINUTES_60.map(m => (
@@ -1062,14 +1253,11 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
 
                     {/* Kết thúc */}
                     <div className={`flex items-center justify-between px-2.5 py-2 rounded-xl border transition-colors ${
-                      isDark 
-                        ? 'bg-neutral-950 border-neutral-800 text-white' 
-                        : 'bg-slate-50 border-slate-200 text-slate-900'
+                      isDark ? 'bg-neutral-950 border-neutral-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}>
                       <select
                         value={formEndHour}
                         onChange={(e) => setFormEndHour(e.target.value)}
-                        title="Giờ kết thúc (0-23)"
                         className="bg-transparent font-bold text-xs outline-none cursor-pointer text-slate-900 dark:text-white"
                       >
                         {HOURS_24.map(h => (
@@ -1082,7 +1270,6 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       <select
                         value={formEndMinute}
                         onChange={(e) => setFormEndMinute(e.target.value)}
-                        title="Phút kết thúc (0-59)"
                         className="bg-transparent font-bold text-xs outline-none cursor-pointer text-slate-900 dark:text-white"
                       >
                         {MINUTES_60.map(m => (
@@ -1095,14 +1282,13 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                   </div>
                 </div>
 
-                {/* Phòng học: chỉ để (Tùy chọn), không có chữ thừa bên dưới */}
                 <div>
                   <label className="block font-semibold mb-1 text-slate-700 dark:text-neutral-200">
                     Phòng học <span className="text-slate-400 font-normal">(Tùy chọn)</span>
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: Lab A2-302, H1..."
+                    placeholder="VD: Phòng B1-405, Lab..."
                     value={formRoom}
                     onChange={(e) => setFormRoom(e.target.value)}
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors ${
@@ -1129,7 +1315,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: TS. Nguyễn Văn Toàn"
+                    placeholder="VD: TS. Nguyễn Văn A"
                     value={formInstructor}
                     onChange={(e) => setFormInstructor(e.target.value)}
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors ${
@@ -1146,7 +1332,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: Kiểm tra giữa kỳ, mang laptop..."
+                    placeholder="VD: Kiểm tra giữa kỳ..."
                     value={formNotes}
                     onChange={(e) => setFormNotes(e.target.value)}
                     className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none transition-colors ${
@@ -1173,7 +1359,7 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                         isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                       }`}
                     >
-                      <option value="">(Chưa xếp - Để ở kho môn kéo thả)</option>
+                      <option value="">(Chưa xếp - Để ở kho môn)</option>
                       {DAYS.map(d => (
                         <option key={d.key} value={d.key}>{d.fullLabel}</option>
                       ))}
@@ -1186,7 +1372,9 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                       value={formSession}
                       onChange={(e) => setFormSession(e.target.value as DaySession)}
                       disabled={!formDay}
-                      className={`w-full px-3 py-2 rounded-lg border text-xs outline-none disabled:opacity-50 ${
+                      className={`w-full px-3 py-2 rounded-lg border text-xs outline-none ${
+                        !formDay ? 'opacity-50 cursor-not-allowed' : ''
+                      } ${
                         isDark ? 'bg-neutral-900 border-neutral-700 text-white' : 'bg-white border-slate-200 text-slate-900'
                       }`}
                     >
@@ -1195,24 +1383,37 @@ export function TimetableView({ onNavigateToCourses }: TimetableViewProps) {
                     </select>
                   </div>
                 </div>
+
+                {/* Sync to Course Checkbox */}
+                {formCourseId && (
+                  <label className="flex items-center gap-2 pt-1 cursor-pointer text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                    <input
+                      type="checkbox"
+                      checked={formSyncToCourse}
+                      onChange={(e) => setFormSyncToCourse(e.target.checked)}
+                      className="rounded text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <span>Tự động cập nhật lịch & phòng vào thông tin Khóa Học</span>
+                  </label>
+                )}
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-200 dark:border-neutral-800">
+              {/* Footer buttons */}
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className={`px-4 py-2 rounded-xl border text-xs font-semibold cursor-pointer ${
-                    isDark ? 'bg-neutral-800 border-neutral-700 text-neutral-300 hover:bg-neutral-700' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                  className={`px-3.5 py-2 rounded-xl text-xs font-semibold cursor-pointer ${
+                    isDark ? 'hover:bg-neutral-800 text-neutral-400' : 'hover:bg-slate-100 text-slate-600'
                   }`}
                 >
-                  Hủy bỏ
+                  Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-bold shadow-sm cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-colors cursor-pointer shadow-xs"
                 >
-                  {editingItem ? 'Lưu Thay Đổi' : 'Thêm Môn'}
+                  {editingItem ? 'Lưu Thay Đổi' : 'Thêm Vào TKB'}
                 </button>
               </div>
             </form>

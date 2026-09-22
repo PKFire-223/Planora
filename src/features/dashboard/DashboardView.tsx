@@ -97,7 +97,7 @@ export function DashboardView({
             onClick={() => onNavigate('tasks')}
             className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-xs font-medium transition-colors shadow-sm cursor-pointer"
           >
-            Làm Bài Tập Ngay
+            Xem Danh Sách Nhiệm Vụ
           </button>
           <button
             onClick={() => onNavigate('timetable')}
@@ -167,7 +167,7 @@ export function DashboardView({
           </div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1 font-medium">
             <TrendingUp className="w-3 h-3" />
-            <span>Đã làm xong {completedTasks.length} task</span>
+            <span>Đã làm xong {completedTasks.length} nhiệm vụ</span>
           </div>
         </div>
 
@@ -288,13 +288,13 @@ export function DashboardView({
             <div className="flex items-center justify-between mb-4">
               <h3 className={`font-bold text-sm flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 <CheckSquare className="w-4 h-4 text-amber-500" />
-                <span>Nhiệm Vụ & Bài Tập Cần Làm</span>
+                <span>Nhiệm Vụ Cần Làm</span>
               </h3>
               <button
                 onClick={() => onNavigate('tasks')}
                 className="text-xs text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer font-medium"
               >
-                <span>Mở danh sách task</span>
+                <span>Mở danh sách nhiệm vụ</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -328,9 +328,9 @@ export function DashboardView({
                         {task.courseName && (
                           <span className="font-medium text-slate-500 dark:text-neutral-400">{task.courseName}</span>
                         )}
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          <span>Hạn: {task.dueDate}</span>
+                        <span className="inline-flex items-center gap-1 leading-none">
+                          <Clock className="w-3 h-3 shrink-0 -translate-y-[0.5px]" />
+                          <span className="leading-none">Hạn: {task.dueDate}</span>
                         </span>
                         {task.isAiGenerated && (
                           <span className="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-medium">

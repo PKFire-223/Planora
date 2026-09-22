@@ -42,24 +42,34 @@ noteRouter.post('/', (req: Request, res: Response) => {
   res.status(201).json({ success: true, data: newNote });
 });
 
-// PUT update note
-noteRouter.put('/:id', (req: Request, res: Response) => {
+// PUT/PATCH update note
+const updateNoteHandler = (req: Request, res: Response) => {
   const idx = memoryStore.notes.findIndex(n => n.id === req.params.id);
   if (idx === -1) {
     throw ApiError.notFound('Không tìm thấy ghi chú');
   }
 
   const current = memoryStore.notes[idx];
+  const { title, content, tags, courseId, isPinned } = req.body;
   const updated = {
     ...current,
-    ...req.body,
+    ...(title !== undefined ? { title } : {}),
+    ...(content !== undefined ? { content } : {}),
+    ...(tags !== undefined ? { 
+      tags: Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((t: string) => t.trim()).filter(Boolean) : []) 
+    } : {}),
+    ...(courseId !== undefined ? { courseId } : {}),
+    ...(isPinned !== undefined ? { isPinned: Boolean(isPinned) } : {}),
     id: current.id,
     updatedAt: new Date().toISOString().split('T')[0]
   };
 
   memoryStore.notes[idx] = updated;
   res.json({ success: true, data: updated });
-});
+};
+
+noteRouter.put('/:id', updateNoteHandler);
+noteRouter.patch('/:id', updateNoteHandler);
 
 // DELETE note
 noteRouter.delete('/:id', (req: Request, res: Response) => {

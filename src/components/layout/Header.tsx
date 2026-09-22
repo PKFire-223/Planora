@@ -43,8 +43,8 @@ export function Header({
       subtitle: 'Xếp lịch học Sáng/Chiều từ T2 đến CN bằng kéo thả trực quan và quản lý phòng học tự do.'
     },
     tasks: {
-      title: 'Kế Hoạch & Bài Tập',
-      subtitle: 'Quản lý danh sách việc cần làm, deadline và chia nhỏ bước bằng AI.'
+      title: 'Nhiệm Vụ',
+      subtitle: 'Quản lý danh sách nhiệm vụ cần làm, hạn chót và chia nhỏ bước bằng AI.'
     },
     notes: {
       title: 'Ghi Chú Học Tập',

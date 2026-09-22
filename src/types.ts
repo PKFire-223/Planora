@@ -49,6 +49,12 @@ export interface Course {
   materials?: CourseMaterial[];
 }
 
+export interface TaskSubtask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   courseId?: string;
@@ -59,6 +65,10 @@ export interface Task {
   dueDate: string;
   estimatedMinutes: number;
   isAiGenerated?: boolean;
+  description?: string;
+  subtasks?: TaskSubtask[];
+  notes?: string;
+  createdAt?: string;
 }
 
 export interface Note {
@@ -74,11 +84,15 @@ export interface Note {
 export interface Goal {
   id: string;
   title: string;
+  description?: string;
+  category?: string;
   targetDate: string;
   targetValue: number;
   currentValue: number;
   unit: string;
   status: 'active' | 'achieved' | 'missed';
+  priority?: 'low' | 'medium' | 'high';
+  createdAt?: string;
 }
 
 export interface ErrorReport {

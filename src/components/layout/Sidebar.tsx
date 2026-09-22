@@ -34,7 +34,7 @@ export function Sidebar({ activeTab, onTabChange, errorCount, onGoToLanding }: S
     { id: 'dashboard', label: 'Tổng Quan', icon: LayoutDashboard },
     { id: 'courses', label: 'Khoá Học', icon: BookOpen },
     { id: 'timetable', label: 'Thời Khóa Biểu', icon: CalendarDays },
-    { id: 'tasks', label: 'Kế Hoạch & Task', icon: CheckSquare },
+    { id: 'tasks', label: 'Nhiệm Vụ', icon: CheckSquare },
     { id: 'notes', label: 'Ghi Chú', icon: StickyNote },
     { id: 'goals', label: 'Mục Tiêu', icon: Target },
     { id: 'ai', label: 'Trợ Lý AI', icon: Bot, highlight: true },
