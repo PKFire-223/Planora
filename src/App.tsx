@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
 import { LandingPageView } from './features/landing/LandingPageView';
@@ -14,15 +14,18 @@ import { ErrorReportsView } from './features/errorReports/ErrorReportsView';
 import { NotificationsView } from './features/notifications/NotificationsView';
 import { ProfileView } from './features/profile/ProfileView';
 import { SettingsView } from './features/settings/SettingsView';
+import { ToastContainer } from './components/common/ToastContainer';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { api } from './services/api';
-import { Course, Task, Note, Goal, ErrorReport, ActiveTab, NotificationItem } from './types';
+import { Course, Task, Note, Goal, ErrorReport, ActiveTab, NotificationItem, TimetableEntry } from './types';
 import { FALLBACK_NOTIFICATIONS } from './data/fallbackData';
 import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 
-export default function App() {
+function PlanoraWorkspace() {
   const { isDark } = useTheme();
   const { user } = useAuth();
+  const { showToast, clearAllToasts } = useToast();
 
   // Primary view navigation: 'landing' (first view), 'auth' (split-screen), 'app' (LMS workspace)
   const [viewMode, setViewMode] = useState<'landing' | 'auth' | 'app'>('landing');
@@ -49,6 +52,14 @@ export default function App() {
   }>({});
   const [loading, setLoading] = useState(true);
 
+  // Track already-notified deadline task IDs to avoid repeat spamming
+  const notifiedDeadlinesRef = useRef<Set<string>>(new Set());
+
+  const handleToastNavigate = (tab: ActiveTab) => {
+    setViewMode('app');
+    setActiveTab(tab);
+  };
+
   const handleNavigateWithContext = (
     tab: ActiveTab,
     context?: { courseId?: string; courseCode?: string; aiPrompt?: string }
@@ -57,6 +68,25 @@ export default function App() {
       setCrossContext(context);
     }
     setActiveTab(tab);
+  };
+
+  // Helper to sync toasts with persistent Notification Center history
+  const addSystemNotification = (item: {
+    title: string;
+    message: string;
+    type: NotificationItem['type'];
+    linkTab?: ActiveTab;
+  }) => {
+    const newNotif: NotificationItem = {
+      id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      title: item.title,
+      message: item.message,
+      type: item.type,
+      timestamp: 'Vừa xong',
+      read: false,
+      linkTab: item.linkTab
+    };
+    setNotifications(prev => [newNotif, ...prev]);
   };
 
   // Persist notifications on change
@@ -107,11 +137,72 @@ export default function App() {
     loadData();
   }, []);
 
+  // Automated 24h Deadline Detector - only runs inside LMS workspace ('app')
+  useEffect(() => {
+    if (viewMode !== 'app') return;
+    if (tasks.length === 0) return;
+
+    const now = new Date();
+    // 24 hours in the future
+    const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    tasks.forEach(task => {
+      if (task.status === 'done') return;
+      if (!task.dueDate) return;
+
+      const due = new Date(task.dueDate);
+      if (isNaN(due.getTime())) return;
+
+      // Check if due is within next 24 hours or overdue
+      const isWithin24h = due.getTime() <= next24Hours.getTime();
+
+      if (isWithin24h && !notifiedDeadlinesRef.current.has(task.id)) {
+        notifiedDeadlinesRef.current.add(task.id);
+
+        const isOverdue = due.getTime() < now.getTime();
+        const title = isOverdue
+          ? `⚠️ Quá hạn nộp: "${task.title}"`
+          : `⏰ Deadline gấp trong 24h: "${task.title}"`;
+        const message = isOverdue
+          ? `Nhiệm vụ này đã quá hạn nộp (${task.dueDate}). Hãy kiểm tra và hoàn thành sớm!`
+          : `Hạn chót vào ${task.dueDate}. Chỉ còn dưới 24h nữa để nộp bài!`;
+
+        showToast({
+          type: 'deadline',
+          title,
+          message,
+          targetTab: 'tasks',
+          duration: 7500
+        });
+
+        // Also add to notification center history
+        addSystemNotification({
+          title,
+          message,
+          type: 'deadline',
+          linkTab: 'tasks'
+        });
+      }
+    });
+  }, [tasks, viewMode, showToast]);
+
   // Course handlers
   const handleCreateCourse = async (data: Partial<Course>) => {
     const res = await api.createCourse(data);
     if (res.success) {
       setCourses(prev => [res.data, ...prev]);
+      showToast({
+        type: 'success',
+        title: 'Thêm khoá học thành công',
+        message: `Khoá học "${res.data.title}" (${res.data.code}) đã được kích hoạt`,
+        targetTab: 'courses'
+      });
+      addSystemNotification({
+        title: `Khoá học mới: ${res.data.title}`,
+        message: `Đã thêm môn ${res.data.code} vào danh mục học kỳ.`,
+        type: 'success',
+        linkTab: 'courses'
+      });
     }
   };
 
@@ -119,13 +210,58 @@ export default function App() {
     const res = await api.updateCourse(id, data);
     if (res.success) {
       setCourses(prev => prev.map(c => c.id === id ? res.data : c));
+      showToast({
+        type: 'info',
+        title: 'Cập nhật khoá học',
+        message: `Đã lưu các thay đổi của "${res.data.title}"`,
+        targetTab: 'courses'
+      });
     }
   };
 
   const handleDeleteCourse = async (id: string) => {
+    const courseToDelete = courses.find(c => c.id === id);
     const res = await api.deleteCourse(id);
     if (res.success) {
       setCourses(prev => prev.filter(c => c.id !== id));
+      showToast({
+        type: 'warning',
+        title: 'Đã xoá khoá học',
+        message: `Đã xoá khoá học "${courseToDelete?.title || ''}"`,
+        targetTab: 'courses'
+      });
+    }
+  };
+
+  // Timetable entry changes
+  const handleTimetableEntryChange = (action: 'create' | 'update' | 'delete', entry: TimetableEntry) => {
+    if (action === 'create') {
+      showToast({
+        type: 'success',
+        title: 'Thêm thời khoá biểu thành công',
+        message: `Đã xếp lịch môn "${entry.name}" (${entry.time})`,
+        targetTab: 'timetable'
+      });
+      addSystemNotification({
+        title: `Lịch học mới: ${entry.name}`,
+        message: `Môn ${entry.name} (${entry.time}) đã được thêm vào thời khoá biểu.`,
+        type: 'info',
+        linkTab: 'timetable'
+      });
+    } else if (action === 'update') {
+      showToast({
+        type: 'info',
+        title: 'Cập nhật thời khoá biểu',
+        message: `Đã lưu thay đổi thông tin môn "${entry.name}"`,
+        targetTab: 'timetable'
+      });
+    } else if (action === 'delete') {
+      showToast({
+        type: 'warning',
+        title: 'Đã xoá khỏi thời khoá biểu',
+        message: `Đã xoá môn "${entry.name}" khỏi lịch học`,
+        targetTab: 'timetable'
+      });
     }
   };
 
@@ -134,6 +270,18 @@ export default function App() {
     const res = await api.createTask(data);
     if (res.success) {
       setTasks(prev => [res.data, ...prev]);
+      showToast({
+        type: 'success',
+        title: 'Thêm nhiệm vụ thành công',
+        message: `Nhiệm vụ "${res.data.title}" đã được tạo`,
+        targetTab: 'tasks'
+      });
+      addSystemNotification({
+        title: `Nhiệm vụ mới: ${res.data.title}`,
+        message: `Hạn chót: ${res.data.dueDate || 'Chưa đặt'}. Ưu tiên: ${res.data.priority}`,
+        type: 'info',
+        linkTab: 'tasks'
+      });
     }
   };
 
@@ -141,6 +289,12 @@ export default function App() {
     const res = await api.updateTask(id, data);
     if (res.success) {
       setTasks(prev => prev.map(t => t.id === id ? res.data : t));
+      showToast({
+        type: 'info',
+        title: 'Cập nhật nhiệm vụ',
+        message: `Đã lưu các thay đổi cho "${res.data.title}"`,
+        targetTab: 'tasks'
+      });
     }
   };
 
@@ -149,13 +303,39 @@ export default function App() {
     const res = await api.updateTaskStatus(id, nextStatus);
     if (res.success) {
       setTasks(prev => prev.map(t => t.id === id ? res.data : t));
+      showToast({
+        type: nextStatus === 'done' ? 'success' : 'info',
+        title: nextStatus === 'done' ? '🎉 Hoàn thành nhiệm vụ!' : 'Đã mở lại nhiệm vụ',
+        message: `Nhiệm vụ "${res.data.title}" đã chuyển sang ${nextStatus === 'done' ? 'Hoàn thành' : 'Cần làm'}`,
+        targetTab: 'tasks'
+      });
     }
   };
 
   const handleDeleteTask = async (id: string) => {
+    const taskToDelete = tasks.find(t => t.id === id);
     const res = await api.deleteTask(id);
     if (res.success) {
       setTasks(prev => prev.filter(t => t.id !== id));
+      showToast({
+        type: 'warning',
+        title: 'Đã xoá nhiệm vụ',
+        message: `Đã xoá "${taskToDelete?.title || 'nhiệm vụ'}"`,
+        targetTab: 'tasks',
+        undoLabel: 'Hoàn tác',
+        undoAction: taskToDelete ? async () => {
+          const restoreRes = await api.createTask(taskToDelete);
+          if (restoreRes.success) {
+            setTasks(prev => [restoreRes.data, ...prev]);
+            showToast({
+              type: 'success',
+              title: 'Đã khôi phục nhiệm vụ',
+              message: `Nhiệm vụ "${taskToDelete.title}" đã được phục hồi!`,
+              targetTab: 'tasks'
+            });
+          }
+        } : undefined
+      });
     }
   };
 
@@ -163,6 +343,12 @@ export default function App() {
     const res = await api.breakdownTask(taskTitle, courseId);
     if (res.success && res.data) {
       setTasks(prev => [...res.data, ...prev]);
+      showToast({
+        type: 'info',
+        title: 'AI Phân tách nhiệm vụ',
+        message: `Đã chia nhỏ "${taskTitle}" thành ${res.data.length} công việc cụ thể`,
+        targetTab: 'tasks'
+      });
     }
   };
 
@@ -171,6 +357,18 @@ export default function App() {
     const res = await api.createNote(data);
     if (res.success) {
       setNotes(prev => [res.data, ...prev]);
+      showToast({
+        type: 'success',
+        title: 'Tạo ghi chú thành công',
+        message: `Ghi chú "${res.data.title}" đã được lưu`,
+        targetTab: 'notes'
+      });
+      addSystemNotification({
+        title: `Ghi chú mới: ${res.data.title}`,
+        message: `Đã thêm vào kho tài liệu học tập.`,
+        type: 'info',
+        linkTab: 'notes'
+      });
     }
   };
 
@@ -178,13 +376,39 @@ export default function App() {
     const res = await api.updateNote(id, data);
     if (res.success) {
       setNotes(prev => prev.map(n => n.id === id ? res.data : n));
+      showToast({
+        type: 'info',
+        title: 'Cập nhật ghi chú',
+        message: `Đã lưu thay đổi ghi chú "${res.data.title}"`,
+        targetTab: 'notes'
+      });
     }
   };
 
   const handleDeleteNote = async (id: string) => {
+    const noteToDelete = notes.find(n => n.id === id);
     const res = await api.deleteNote(id);
     if (res.success) {
       setNotes(prev => prev.filter(n => n.id !== id));
+      showToast({
+        type: 'warning',
+        title: 'Đã xoá ghi chú',
+        message: `Đã xoá ghi chú "${noteToDelete?.title || ''}"`,
+        targetTab: 'notes',
+        undoLabel: 'Hoàn tác',
+        undoAction: noteToDelete ? async () => {
+          const restoreRes = await api.createNote(noteToDelete);
+          if (restoreRes.success) {
+            setNotes(prev => [restoreRes.data, ...prev]);
+            showToast({
+              type: 'success',
+              title: 'Đã khôi phục ghi chú',
+              message: `Ghi chú "${noteToDelete.title}" đã được phục hồi!`,
+              targetTab: 'notes'
+            });
+          }
+        } : undefined
+      });
     }
   };
 
@@ -193,6 +417,18 @@ export default function App() {
     const res = await api.createGoal(data);
     if (res.success) {
       setGoals(prev => [res.data, ...prev]);
+      showToast({
+        type: 'success',
+        title: 'Tạo mục tiêu thành công',
+        message: `Mục tiêu "${res.data.title}" (${res.data.targetValue} ${res.data.unit}) đã được kích hoạt`,
+        targetTab: 'goals'
+      });
+      addSystemNotification({
+        title: `Mục tiêu mới: ${res.data.title}`,
+        message: `Mục tiêu tự học ${res.data.targetValue} ${res.data.unit} đã được kích hoạt.`,
+        type: 'success',
+        linkTab: 'goals'
+      });
     }
   };
 
@@ -200,13 +436,39 @@ export default function App() {
     const res = await api.updateGoal(id, data);
     if (res.success) {
       setGoals(prev => prev.map(g => g.id === id ? res.data : g));
+      showToast({
+        type: 'info',
+        title: 'Cập nhật mục tiêu',
+        message: `Đã cập nhật thông tin "${res.data.title}"`,
+        targetTab: 'goals'
+      });
     }
   };
 
   const handleDeleteGoal = async (id: string) => {
+    const goalToDelete = goals.find(g => g.id === id);
     const res = await api.deleteGoal(id);
     if (res.success) {
       setGoals(prev => prev.filter(g => g.id !== id));
+      showToast({
+        type: 'warning',
+        title: 'Đã xoá mục tiêu',
+        message: `Đã xoá mục tiêu "${goalToDelete?.title || ''}"`,
+        targetTab: 'goals',
+        undoLabel: 'Hoàn tác',
+        undoAction: goalToDelete ? async () => {
+          const restoreRes = await api.createGoal(goalToDelete);
+          if (restoreRes.success) {
+            setGoals(prev => [restoreRes.data, ...prev]);
+            showToast({
+              type: 'success',
+              title: 'Đã khôi phục mục tiêu',
+              message: `Mục tiêu "${goalToDelete.title}" đã được phục hồi!`,
+              targetTab: 'goals'
+            });
+          }
+        } : undefined
+      });
     }
   };
 
@@ -214,6 +476,13 @@ export default function App() {
     const res = await api.updateGoalProgress(id, amount);
     if (res.success) {
       setGoals(prev => prev.map(g => g.id === id ? res.data : g));
+      const isCompleted = res.data.currentValue >= res.data.targetValue;
+      showToast({
+        type: isCompleted ? 'success' : 'info',
+        title: isCompleted ? '🎯 Hoàn thành mục tiêu!' : 'Cập nhật tiến độ',
+        message: `"${res.data.title}": ${res.data.currentValue}/${res.data.targetValue} ${res.data.unit}`,
+        targetTab: 'goals'
+      });
     }
   };
 
@@ -221,6 +490,13 @@ export default function App() {
     const res = await api.updateGoalProgress(id, params);
     if (res.success) {
       setGoals(prev => prev.map(g => g.id === id ? res.data : g));
+      const isCompleted = res.data.currentValue >= res.data.targetValue;
+      showToast({
+        type: isCompleted ? 'success' : 'info',
+        title: isCompleted ? '🎯 Cán đích 100% mục tiêu!' : 'Cập nhật tiến độ',
+        message: `"${res.data.title}": ${res.data.currentValue}/${res.data.targetValue} ${res.data.unit}`,
+        targetTab: 'goals'
+      });
     }
   };
 
@@ -229,6 +505,12 @@ export default function App() {
     const res = await api.reportError(data);
     if (res.success) {
       setErrors(prev => [res.data, ...prev]);
+      showToast({
+        type: 'info',
+        title: 'Đã gửi báo cáo lỗi',
+        message: `Báo cáo "${res.data.title}" đã được ghi nhận vào hệ thống`,
+        targetTab: 'errors'
+      });
     }
   };
 
@@ -236,17 +518,29 @@ export default function App() {
     const res = await api.resolveError(id, notes);
     if (res.success) {
       setErrors(prev => prev.map(e => e.id === id ? res.data : e));
+      showToast({
+        type: 'success',
+        title: 'Đã giải quyết vấn đề',
+        message: `Vấn đề đã được đánh dấu là đã giải quyết`,
+        targetTab: 'errors'
+      });
     }
   };
 
   const openErrorCount = errors.filter(e => e.status !== 'resolved').length;
 
   const handleOpenAuth = (tab: 'login' | 'register' = 'login') => {
+    clearAllToasts();
     setAuthTab(tab);
     setViewMode('auth');
   };
 
-  // VIEW 1: Trang Giới Thiệu (Mở ra đầu tiên)
+  const handleGoToLanding = () => {
+    clearAllToasts();
+    setViewMode('landing');
+  };
+
+  // VIEW 1: Trang Giới Thiệu (Mở ra đầu tiên) - KHÔNG hiện thông báo Toast ở đây
   if (viewMode === 'landing') {
     return (
       <LandingPageView
@@ -267,7 +561,7 @@ export default function App() {
     return (
       <AuthSplitView
         initialTab={authTab}
-        onBackToLanding={() => setViewMode('landing')}
+        onBackToLanding={handleGoToLanding}
         onEnterApp={() => setViewMode('app')}
       />
     );
@@ -278,142 +572,154 @@ export default function App() {
     return (
       <AuthSplitView
         initialTab="login"
-        onBackToLanding={() => setViewMode('landing')}
+        onBackToLanding={handleGoToLanding}
         onEnterApp={() => setViewMode('app')}
       />
     );
   }
 
   return (
-    <div className={`min-h-screen flex flex-row transition-colors duration-200 ${
-      isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-slate-50 text-slate-900'
-    }`}>
-      {/* Persistent Sidebar */}
-      <Sidebar
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        errorCount={openErrorCount}
-        onGoToLanding={() => setViewMode('landing')}
-      />
-
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <Header
+    <>
+      <ToastContainer onNavigate={handleToastNavigate} />
+      <div className={`min-h-screen flex flex-row transition-colors duration-200 ${
+        isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-slate-50 text-slate-900'
+      }`}>
+        {/* Persistent Sidebar */}
+        <Sidebar
           activeTab={activeTab}
-          onOpenAi={() => setActiveTab('ai')}
-          onGoToLanding={() => setViewMode('landing')}
-          onOpenAuth={(tab) => handleOpenAuth(tab)}
-          notifications={notifications}
-          onMarkAsRead={handleMarkAsRead}
-          onMarkAllAsRead={handleMarkAllAsRead}
-          onNavigate={setActiveTab}
+          onTabChange={setActiveTab}
+          errorCount={openErrorCount}
+          onGoToLanding={handleGoToLanding}
         />
 
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
-          {loading ? (
-            <div className={`flex items-center justify-center h-64 text-xs font-medium ${
-              isDark ? 'text-neutral-400' : 'text-slate-500'
-            }`}>
-              Đang kết nối hệ thống Planora LMS...
-            </div>
-          ) : (
-            <>
-              {activeTab === 'dashboard' && (
-                <DashboardView
-                  courses={courses}
-                  tasks={tasks}
-                  goals={goals}
-                  errors={errors}
-                  notes={notes}
-                  onNavigate={setActiveTab}
-                  onToggleTask={handleToggleTask}
-                />
-              )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          <Header
+            activeTab={activeTab}
+            onOpenAi={() => setActiveTab('ai')}
+            onGoToLanding={handleGoToLanding}
+            onOpenAuth={(tab) => handleOpenAuth(tab)}
+            notifications={notifications}
+            onMarkAsRead={handleMarkAsRead}
+            onMarkAllAsRead={handleMarkAllAsRead}
+            onNavigate={setActiveTab}
+          />
 
-              {activeTab === 'courses' && (
-                <CoursesView
-                  courses={courses}
-                  onCreateCourse={handleCreateCourse}
-                  onUpdateCourse={handleUpdateCourse}
-                  onDeleteCourse={handleDeleteCourse}
-                  onNavigateToTab={handleNavigateWithContext}
-                />
-              )}
+          <main className="flex-1 p-6 max-w-7xl w-full mx-auto overflow-y-auto">
+            {loading ? (
+              <div className={`flex items-center justify-center h-64 text-xs font-medium ${
+                isDark ? 'text-neutral-400' : 'text-slate-500'
+              }`}>
+                Đang kết nối hệ thống Planora LMS...
+              </div>
+            ) : (
+              <>
+                {activeTab === 'dashboard' && (
+                  <DashboardView
+                    courses={courses}
+                    tasks={tasks}
+                    goals={goals}
+                    errors={errors}
+                    notes={notes}
+                    onNavigate={setActiveTab}
+                    onToggleTask={handleToggleTask}
+                  />
+                )}
 
-              {activeTab === 'timetable' && (
-                <TimetableView
-                  onNavigateToCourses={() => setActiveTab('courses')}
-                />
-              )}
+                {activeTab === 'courses' && (
+                  <CoursesView
+                    courses={courses}
+                    onCreateCourse={handleCreateCourse}
+                    onUpdateCourse={handleUpdateCourse}
+                    onDeleteCourse={handleDeleteCourse}
+                    onNavigateToTab={handleNavigateWithContext}
+                  />
+                )}
 
-              {activeTab === 'tasks' && (
-                <TasksView
-                  tasks={tasks}
-                  courses={courses}
-                  onCreateTask={handleCreateTask}
-                  onUpdateTask={handleUpdateTask}
-                  onToggleTask={handleToggleTask}
-                  onDeleteTask={handleDeleteTask}
-                  onAiBreakdown={handleAiBreakdown}
-                  initialCourseId={crossContext.courseId}
-                />
-              )}
+                {activeTab === 'timetable' && (
+                  <TimetableView
+                    onNavigateToCourses={() => setActiveTab('courses')}
+                    onEntryChange={handleTimetableEntryChange}
+                  />
+                )}
 
-              {activeTab === 'notes' && (
-                <NotesView
-                  notes={notes}
-                  courses={courses}
-                  onCreateNote={handleCreateNote}
-                  onUpdateNote={handleUpdateNote}
-                  onDeleteNote={handleDeleteNote}
-                  initialSearchTerm={crossContext.courseCode}
-                />
-              )}
+                {activeTab === 'tasks' && (
+                  <TasksView
+                    tasks={tasks}
+                    courses={courses}
+                    onCreateTask={handleCreateTask}
+                    onUpdateTask={handleUpdateTask}
+                    onToggleTask={handleToggleTask}
+                    onDeleteTask={handleDeleteTask}
+                    onAiBreakdown={handleAiBreakdown}
+                    initialCourseId={crossContext.courseId}
+                  />
+                )}
 
-              {activeTab === 'goals' && (
-                <GoalsView
-                  goals={goals}
-                  onCreateGoal={handleCreateGoal}
-                  onUpdateGoal={handleUpdateGoal}
-                  onDeleteGoal={handleDeleteGoal}
-                  onIncrementGoal={handleIncrementGoal}
-                  onUpdateProgress={handleUpdateGoalProgress}
-                />
-              )}
+                {activeTab === 'notes' && (
+                  <NotesView
+                    notes={notes}
+                    courses={courses}
+                    onCreateNote={handleCreateNote}
+                    onUpdateNote={handleUpdateNote}
+                    onDeleteNote={handleDeleteNote}
+                    initialSearchTerm={crossContext.courseCode}
+                  />
+                )}
 
-              {activeTab === 'ai' && (
-                <AiAssistantView initialPrompt={crossContext.aiPrompt} />
-              )}
+                {activeTab === 'goals' && (
+                  <GoalsView
+                    goals={goals}
+                    onCreateGoal={handleCreateGoal}
+                    onUpdateGoal={handleUpdateGoal}
+                    onDeleteGoal={handleDeleteGoal}
+                    onIncrementGoal={handleIncrementGoal}
+                    onUpdateProgress={handleUpdateGoalProgress}
+                  />
+                )}
 
-              {activeTab === 'errors' && (
-                <ErrorReportsView
-                  errors={errors}
-                  onReportError={handleReportError}
-                  onResolveError={handleResolveError}
-                />
-              )}
+                {activeTab === 'ai' && (
+                  <AiAssistantView initialPrompt={crossContext.aiPrompt} />
+                )}
 
-              {activeTab === 'notifications' && (
-                <NotificationsView
-                  notifications={notifications}
-                  onMarkAsRead={handleMarkAsRead}
-                  onMarkAllAsRead={handleMarkAllAsRead}
-                  onDeleteNotification={handleDeleteNotification}
-                  onNavigate={setActiveTab}
-                />
-              )}
+                {activeTab === 'errors' && (
+                  <ErrorReportsView
+                    errors={errors}
+                    onReportError={handleReportError}
+                    onResolveError={handleResolveError}
+                  />
+                )}
 
-              {activeTab === 'profile' && (
-                <ProfileView />
-              )}
+                {activeTab === 'notifications' && (
+                  <NotificationsView
+                    notifications={notifications}
+                    onMarkAsRead={handleMarkAsRead}
+                    onMarkAllAsRead={handleMarkAllAsRead}
+                    onDeleteNotification={handleDeleteNotification}
+                    onNavigate={setActiveTab}
+                  />
+                )}
 
-              {activeTab === 'settings' && (
-                <SettingsView />
-              )}
-            </>
-          )}
-        </main>
+                {activeTab === 'profile' && (
+                  <ProfileView />
+                )}
+
+                {activeTab === 'settings' && (
+                  <SettingsView />
+                )}
+              </>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <PlanoraWorkspace />
+    </ToastProvider>
   );
 }
