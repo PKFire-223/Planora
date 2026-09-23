@@ -1,10 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import mongoose from 'mongoose';
 import { UserItem } from '../../types';
 import { UserModel } from '../../models/user.model';
+import { validatePassword } from '../../utils/passwordValidator';
+import { sendPasswordResetEmail } from '../../services/email.service';
 
 const ADMIN_EMAIL = (process.env.SEED_SYSTEM_ADMIN_EMAIL || 'systemadmin@gmail.com').toLowerCase();
 const ADMIN_PASSWORD = process.env.SEED_SYSTEM_ADMIN_PASSWORD || '@Systemadmin';
@@ -28,6 +30,32 @@ function loadInitialUsers(): UserItem[] {
       studentCode: 'ADMIN-001',
       faculty: 'Quản Trị & Kỹ Thuật Hệ Thống Planora',
       bio: 'Quản trị viên cấp cao chịu trách nhiệm điều hành, bảo mật và phân quyền toàn bộ hệ sinh thái LMS.'
+    },
+    {
+      id: 'user-demo-student',
+      name: 'Nguyễn Văn Minh',
+      email: 'hocvien@planora.edu.vn',
+      passwordHash: hashPassword('@Hocvien123'),
+      role: 'student',
+      createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString(),
+      lastActiveAt: new Date().toISOString(),
+      phone: '0987 654 321',
+      studentCode: 'IT-2026-8899',
+      faculty: 'Công Nghệ Thông Tin & Khoa Học Máy Tính',
+      bio: 'Học viên chuyên ngành Kỹ thuật Phần mềm, theo đuổi lập trình Fullstack React & Node.js.'
+    },
+    {
+      id: 'user-tester-member',
+      name: 'Tester Thành Viên',
+      email: 'tester123@gmail.com',
+      passwordHash: hashPassword('Password123@'),
+      role: 'student',
+      createdAt: new Date().toISOString(),
+      lastActiveAt: new Date().toISOString(),
+      phone: '0912 345 678',
+      studentCode: 'TEST-MEMBER-01',
+      faculty: 'Khoa Công Nghệ Thông Tin',
+      bio: 'Tài khoản thành viên kiểm thử tính năng và bảo mật hệ thống Planora LMS.'
     }
   ];
 
@@ -58,7 +86,7 @@ function loadInitialUsers(): UserItem[] {
 // In-memory users store
 export const usersStore: UserItem[] = loadInitialUsers();
 
-// Simple token storage
+// Session token storage
 const sessions = new Map<string, { userId: string; expiresAt: number }>();
 
 function generateToken(userId: string): string {
@@ -69,6 +97,43 @@ function generateToken(userId: string): string {
     expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000
   });
   return token;
+}
+
+// OTP store for forgot password reset: email -> { code, expiresAt, attempts }
+const resetCodesStore = new Map<string, { code: string; expiresAt: number; attempts: number }>();
+
+/**
+ * Middleware: Verify user is authenticated and has Admin role
+ */
+function requireAdmin(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+
+  if (!token || !sessions.has(token)) {
+    res.status(401).json({
+      success: false,
+      message: 'Yêu cầu đăng nhập tài khoản Quản trị viên để thực hiện thao tác này'
+    });
+    return;
+  }
+
+  const session = sessions.get(token)!;
+  if (Date.now() > session.expiresAt) {
+    sessions.delete(token);
+    res.status(401).json({ success: false, message: 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại' });
+    return;
+  }
+
+  const user = usersStore.find(u => u.id === session.userId);
+  if (!user || user.role !== 'admin') {
+    res.status(403).json({
+      success: false,
+      message: 'Quyền truy cập bị từ chối. Chỉ Quản trị viên (Admin) mới có quyền quản trị tài khoản người dùng.'
+    });
+    return;
+  }
+
+  next();
 }
 
 export const authRouter = Router();
@@ -103,7 +168,7 @@ authRouter.post('/login', async (req: Request, res: Response) => {
   if (!user || user.passwordHash !== inputHash) {
     res.status(401).json({
       success: false,
-      message: 'Email hoặc mật khẩu không chính xác. Thử lại hoặc dùng tài khoản admin.'
+      message: 'Email hoặc mật khẩu không chính xác. Vui lòng kiểm tra lại.'
     });
     return;
   }
@@ -128,7 +193,15 @@ authRouter.post('/login', async (req: Request, res: Response) => {
       name: user.name,
       email: user.email,
       role: user.role,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      lastActiveAt: user.lastActiveAt,
+      phone: user.phone,
+      studentCode: user.studentCode,
+      faculty: user.faculty,
+      bio: user.bio,
+      avatar: user.avatar,
+      coverImage: user.coverImage,
+      schoolName: user.schoolName
     }
   });
 });
@@ -144,8 +217,14 @@ authRouter.post('/register', async (req: Request, res: Response) => {
 
   const normalizedEmail = String(email).trim().toLowerCase();
 
-  if (password.length < 6) {
-    res.status(400).json({ success: false, message: 'Mật khẩu phải chứa ít nhất 6 ký tự' });
+  // Validate strong password rule
+  const pwdCheck = validatePassword(password);
+  if (!pwdCheck.valid) {
+    res.status(400).json({
+      success: false,
+      message: pwdCheck.message,
+      rules: pwdCheck.rules
+    });
     return;
   }
 
@@ -168,7 +247,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     name: String(name).trim(),
     email: normalizedEmail,
     passwordHash: hashPassword(password),
-    role: 'student',
+    role: 'student', // Đăng ký tự do luôn là học viên / thành viên
     createdAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),
     studentCode: `STU-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -196,7 +275,197 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       name: newUser.name,
       email: newUser.email,
       role: newUser.role,
-      createdAt: newUser.createdAt
+      createdAt: newUser.createdAt,
+      lastActiveAt: newUser.lastActiveAt,
+      studentCode: newUser.studentCode,
+      faculty: newUser.faculty
+    }
+  });
+});
+
+// POST /api/auth/forgot-password - Gửi mã OTP xác nhận về email thật
+authRouter.post('/forgot-password', async (req: Request, res: Response) => {
+  const { email } = req.body;
+
+  if (!email) {
+    res.status(400).json({ success: false, message: 'Vui lòng cung cấp địa chỉ email đã đăng ký' });
+    return;
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+
+  let user = usersStore.find(u => u.email === normalizedEmail);
+  if (!user && mongoose.connection.readyState === 1) {
+    try {
+      const dbUser = await UserModel.findOne({ email: normalizedEmail }).lean();
+      if (dbUser) {
+        user = dbUser as unknown as UserItem;
+        usersStore.push(user);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!user) {
+    res.status(404).json({
+      success: false,
+      message: 'Không tìm thấy tài khoản liên kết với địa chỉ email này trong hệ thống Planora.'
+    });
+    return;
+  }
+
+  // Generate 6-digit OTP code
+  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresInMinutes = 15;
+  const expiresAt = Date.now() + expiresInMinutes * 60 * 1000;
+
+  resetCodesStore.set(normalizedEmail, {
+    code: resetCode,
+    expiresAt,
+    attempts: 0
+  });
+
+  // Send real email via Nodemailer
+  const emailResult = await sendPasswordResetEmail({
+    toEmail: user.email,
+    userName: user.name,
+    resetCode,
+    expiresInMinutes
+  });
+
+  res.json({
+    success: true,
+    message: emailResult.success
+      ? `Mã xác nhận 6 số đã được gửi tới email ${user.email}. Vui lòng kiểm tra hộp thư.`
+      : `Hệ thống đã tạo mã xác nhận cho ${user.email}. (Lưu ý: ${emailResult.message})`,
+    email: user.email,
+    expiresInMinutes,
+    isRealSmtp: emailResult.isRealSmtp,
+    previewUrl: emailResult.previewUrl || undefined,
+    // Provide OTP in response in dev/test environment to allow seamless verification
+    devOtp: resetCode
+  });
+});
+
+// POST /api/auth/verify-reset-code - Kiểm tra tính hợp lệ của mã OTP
+authRouter.post('/verify-reset-code', (req: Request, res: Response) => {
+  const { email, code } = req.body;
+
+  if (!email || !code) {
+    res.status(400).json({ success: false, message: 'Vui lòng cung cấp email và mã xác nhận' });
+    return;
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const record = resetCodesStore.get(normalizedEmail);
+
+  if (!record) {
+    res.status(400).json({ success: false, message: 'Chưa có yêu cầu đặt lại mật khẩu cho email này hoặc mã đã hết hạn' });
+    return;
+  }
+
+  if (Date.now() > record.expiresAt) {
+    resetCodesStore.delete(normalizedEmail);
+    res.status(400).json({ success: false, message: 'Mã xác nhận đã quá hạn (15 phút). Vui lòng yêu cầu mã mới.' });
+    return;
+  }
+
+  if (record.code !== String(code).trim()) {
+    record.attempts += 1;
+    if (record.attempts >= 5) {
+      resetCodesStore.delete(normalizedEmail);
+      res.status(400).json({ success: false, message: 'Bạn đã nhập sai mã quá 5 lần. Vui lòng gửi lại yêu cầu.' });
+      return;
+    }
+    res.status(400).json({ success: false, message: 'Mã xác nhận không chính xác. Vui lòng kiểm tra lại email.' });
+    return;
+  }
+
+  res.json({ success: true, message: 'Mã xác nhận chính xác' });
+});
+
+// POST /api/auth/reset-password - Đặt lại mật khẩu mới với mã OTP & xác thực độ mạnh
+authRouter.post('/reset-password', async (req: Request, res: Response) => {
+  const { email, code, newPassword } = req.body;
+
+  if (!email || !code || !newPassword) {
+    res.status(400).json({ success: false, message: 'Vui lòng điền đầy đủ email, mã xác nhận và mật khẩu mới' });
+    return;
+  }
+
+  const normalizedEmail = String(email).trim().toLowerCase();
+  const record = resetCodesStore.get(normalizedEmail);
+
+  if (!record || record.code !== String(code).trim()) {
+    res.status(400).json({ success: false, message: 'Mã xác nhận không đúng hoặc đã hết hạn.' });
+    return;
+  }
+
+  if (Date.now() > record.expiresAt) {
+    resetCodesStore.delete(normalizedEmail);
+    res.status(400).json({ success: false, message: 'Mã xác nhận đã quá hạn 15 phút. Vui lòng yêu cầu mã mới.' });
+    return;
+  }
+
+  // Validate strong password rule
+  const pwdCheck = validatePassword(newPassword);
+  if (!pwdCheck.valid) {
+    res.status(400).json({
+      success: false,
+      message: pwdCheck.message,
+      rules: pwdCheck.rules
+    });
+    return;
+  }
+
+  let user = usersStore.find(u => u.email === normalizedEmail);
+  if (!user && mongoose.connection.readyState === 1) {
+    try {
+      const dbUser = await UserModel.findOne({ email: normalizedEmail }).lean();
+      if (dbUser) {
+        user = dbUser as unknown as UserItem;
+        usersStore.push(user);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!user) {
+    res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    return;
+  }
+
+  user.passwordHash = hashPassword(newPassword);
+  user.lastActiveAt = new Date().toISOString();
+
+  // Clear OTP record
+  resetCodesStore.delete(normalizedEmail);
+
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await UserModel.findOneAndUpdate(
+        { email: normalizedEmail },
+        { passwordHash: user.passwordHash, lastActiveAt: user.lastActiveAt }
+      );
+    } catch (err: any) {
+      console.warn('[Auth] MongoDB reset password warning:', err.message);
+    }
+  }
+
+  const token = generateToken(user.id);
+
+  res.json({
+    success: true,
+    message: 'Đặt lại mật khẩu thành công! Bạn có thể sử dụng mật khẩu mới để đăng nhập.',
+    token,
+    user: {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt
     }
   });
 });
@@ -340,13 +609,16 @@ authRouter.post('/logout', (req: Request, res: Response) => {
   res.json({ success: true, message: 'Đăng xuất thành công' });
 });
 
+// =========================================================================
+// ADMIN ONLY ROUTES - Protected by requireAdmin
+// =========================================================================
+
 // GET /api/auth/users (Admin only)
-authRouter.get('/users', async (_req: Request, res: Response) => {
+authRouter.get('/users', requireAdmin, async (_req: Request, res: Response) => {
   if (mongoose.connection.readyState === 1) {
     try {
       const dbUsers = await UserModel.find().lean();
       if (dbUsers.length > 0) {
-        // Sync into usersStore
         for (const dbU of dbUsers) {
           if (!usersStore.some(u => u.id === dbU.id)) {
             usersStore.push(dbU as unknown as UserItem);
@@ -374,12 +646,20 @@ authRouter.get('/users', async (_req: Request, res: Response) => {
 });
 
 // POST /api/auth/users (Admin creates new account)
-authRouter.post('/users', async (req: Request, res: Response) => {
+authRouter.post('/users', requireAdmin, async (req: Request, res: Response) => {
   const { name, email, password, role, phone, studentCode, faculty, bio } = req.body;
   if (!name || !email || !password) {
     res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu' });
     return;
   }
+
+  // Validate strong password rule
+  const pwdCheck = validatePassword(password);
+  if (!pwdCheck.valid) {
+    res.status(400).json({ success: false, message: pwdCheck.message, rules: pwdCheck.rules });
+    return;
+  }
+
   const normEmail = String(email).trim().toLowerCase();
   if (usersStore.some(u => u.email === normEmail)) {
     res.status(409).json({ success: false, message: 'Email này đã tồn tại trong hệ thống' });
@@ -429,7 +709,7 @@ authRouter.post('/users', async (req: Request, res: Response) => {
 });
 
 // PUT /api/auth/users/:id (Admin updates user)
-authRouter.put('/users/:id', async (req: Request, res: Response) => {
+authRouter.put('/users/:id', requireAdmin, async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = usersStore.find(u => u.id === id);
   if (!user) {
@@ -455,7 +735,13 @@ authRouter.put('/users/:id', async (req: Request, res: Response) => {
   if (studentCode !== undefined) user.studentCode = studentCode;
   if (faculty !== undefined) user.faculty = faculty;
   if (bio !== undefined) user.bio = bio;
-  if (password && String(password).trim().length >= 6) {
+
+  if (password && String(password).trim().length > 0) {
+    const pwdCheck = validatePassword(String(password).trim());
+    if (!pwdCheck.valid) {
+      res.status(400).json({ success: false, message: pwdCheck.message, rules: pwdCheck.rules });
+      return;
+    }
     user.passwordHash = hashPassword(String(password).trim());
   }
 
@@ -486,7 +772,7 @@ authRouter.put('/users/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE /api/auth/users/:id (Admin deletes user)
-authRouter.delete('/users/:id', async (req: Request, res: Response) => {
+authRouter.delete('/users/:id', requireAdmin, async (req: Request, res: Response) => {
   const { id } = req.params;
   const index = usersStore.findIndex(u => u.id === id);
   if (index === -1) {

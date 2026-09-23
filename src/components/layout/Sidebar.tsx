@@ -92,7 +92,7 @@ export function Sidebar({
           <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
             isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
           }`}>
-            v1.0
+            v1.5
           </span>
         </div>
 

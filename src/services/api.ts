@@ -58,6 +58,23 @@ export const api = {
             message: 'Đăng nhập Admin thành công'
           };
         }
+        if (normEmail === 'tester123@gmail.com' && password === 'Password123@') {
+          localUser = {
+            id: 'user-tester-member',
+            name: 'Tester Thành Viên',
+            email: 'tester123@gmail.com',
+            role: 'student',
+            createdAt: '2026-09-23',
+            studentCode: 'TEST-MEMBER-01',
+            faculty: 'Khoa Công Nghệ Thông Tin'
+          };
+          return {
+            success: true,
+            token: 'pln_mock_tester_token',
+            user: localUser,
+            message: 'Đăng nhập Tester Thành Viên thành công'
+          };
+        }
         if (password.length >= 6) {
           localUser = {
             id: `user-${Date.now()}`,
@@ -158,6 +175,67 @@ export const api = {
           message: 'Cập nhật thành công (Offline Mode)'
         };
       }
+    );
+  },
+
+  // Forgot / Reset Password API
+  async forgotPassword(email: string): Promise<{
+    success: boolean;
+    message: string;
+    email?: string;
+    previewUrl?: string;
+    isRealSmtp?: boolean;
+    devOtp?: string;
+  }> {
+    return request(
+      '/api/auth/forgot-password',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      },
+      () => ({
+        success: true,
+        message: `Đã gửi mã xác nhận 6 số đến email ${email}`,
+        email,
+        devOtp: '123456'
+      })
+    );
+  },
+
+  async verifyResetCode(email: string, code: string): Promise<{ success: boolean; message: string }> {
+    return request(
+      '/api/auth/verify-reset-code',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+      },
+      () => ({
+        success: true,
+        message: 'Mã xác nhận chính xác'
+      })
+    );
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<{
+    success: boolean;
+    message: string;
+    token?: string;
+    user?: User;
+    rules?: any;
+  }> {
+    return request(
+      '/api/auth/reset-password',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, newPassword })
+      },
+      () => ({
+        success: true,
+        message: 'Đặt lại mật khẩu thành công'
+      })
     );
   },
 

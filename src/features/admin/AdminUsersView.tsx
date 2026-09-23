@@ -24,6 +24,7 @@ import { User } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { api } from '../../services/api';
+import { validatePassword } from '../../utils/passwordValidator';
 
 // Format last seen duration in Vietnamese
 function formatLastSeen(lastActiveAt?: string, isOnline?: boolean): string {
@@ -152,6 +153,11 @@ export function AdminUsersView() {
         bio: formData.bio
       };
       if (formData.password.trim()) {
+        const pwdCheck = validatePassword(formData.password.trim());
+        if (!pwdCheck.valid) {
+          showFeedback('error', pwdCheck.message);
+          return;
+        }
         payload.password = formData.password.trim();
       }
 
@@ -176,6 +182,12 @@ export function AdminUsersView() {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password) {
       showFeedback('error', 'Vui lòng điền đầy đủ họ tên, email và mật khẩu');
+      return;
+    }
+
+    const pwdCheck = validatePassword(formData.password);
+    if (!pwdCheck.valid) {
+      showFeedback('error', pwdCheck.message);
       return;
     }
 

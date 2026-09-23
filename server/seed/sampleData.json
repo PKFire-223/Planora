@@ -25,6 +25,19 @@
       "studentCode": "IT-2026-8899",
       "faculty": "Công Nghệ Thông Tin & Khoa Học Máy Tính",
       "bio": "Học viên chuyên ngành Kỹ thuật Phần mềm, theo đuổi lập trình Fullstack React & Node.js."
+    },
+    {
+      "id": "user-tester-member",
+      "name": "Tester Thành Viên",
+      "email": "tester123@gmail.com",
+      "passwordHash": "d85fb61a933e0b8a45f88c89888502573a3d318657a576ef5529bf948b98882c",
+      "role": "student",
+      "createdAt": "2026-09-23T00:00:00.000Z",
+      "lastActiveAt": "2026-09-23T00:00:00.000Z",
+      "phone": "0912 345 678",
+      "studentCode": "TEST-MEMBER-01",
+      "faculty": "Khoa Công Nghệ Thông Tin",
+      "bio": "Tài khoản thành viên kiểm thử tính năng và bảo mật hệ thống Planora LMS."
     }
   ],
   "courses": [

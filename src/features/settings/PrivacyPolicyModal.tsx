@@ -372,7 +372,7 @@ Contact: support@planora.edu.vn`;
           isDark ? 'border-neutral-800 bg-neutral-950/60' : 'border-slate-200 bg-slate-50/70'
         }`}>
           <div className={`text-[11px] ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
-            Planora Security & Privacy Charter • v1.2.0
+            Planora Security & Privacy Charter • v1.5.0
           </div>
           <button
             type="button"

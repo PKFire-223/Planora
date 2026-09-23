@@ -8,22 +8,23 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isAuthModalOpen: boolean;
-  authModalTab: 'login' | 'register';
+  authModalTab: 'login' | 'register' | 'forgot';
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (name: string, email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   updateUser: (data: Partial<User>) => void;
   openLoginModal: () => void;
   openRegisterModal: () => void;
+  openForgotModal: () => void;
   closeAuthModal: () => void;
-  setAuthModalTab: (tab: 'login' | 'register') => void;
+  setAuthModalTab: (tab: 'login' | 'register' | 'forgot') => void;
+  setAuthenticatedUser: (user: User, token: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    // Normal web authentication: only restore if user previously logged in
     const saved = localStorage.getItem('planora_user');
     if (saved) {
       try {
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const [loading, setLoading] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState<'login' | 'register'>('login');
+  const [authModalTab, setAuthModalTab] = useState<'login' | 'register' | 'forgot'>('login');
 
   // Verify session on mount if token exists
   useEffect(() => {
@@ -60,16 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, [token]);
 
+  const setAuthenticatedUser = (newUser: User, newToken: string) => {
+    setUser(newUser);
+    setToken(newToken);
+    localStorage.setItem('planora_auth_token', newToken);
+    localStorage.setItem('planora_user', JSON.stringify(newUser));
+    setIsAuthModalOpen(false);
+  };
+
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
       const res = await api.login(email, password);
       if (res.success && res.user && res.token) {
-        setUser(res.user);
-        setToken(res.token);
-        localStorage.setItem('planora_auth_token', res.token);
-        localStorage.setItem('planora_user', JSON.stringify(res.user));
-        setIsAuthModalOpen(false);
+        setAuthenticatedUser(res.user, res.token);
         return { success: true, message: res.message || 'Đăng nhập thành công' };
       }
       return { success: false, message: res.message || 'Email hoặc mật khẩu không đúng' };
@@ -85,11 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await api.register(name, email, password);
       if (res.success && res.user && res.token) {
-        setUser(res.user);
-        setToken(res.token);
-        localStorage.setItem('planora_auth_token', res.token);
-        localStorage.setItem('planora_user', JSON.stringify(res.user));
-        setIsAuthModalOpen(false);
+        setAuthenticatedUser(res.user, res.token);
         return { success: true, message: res.message || 'Đăng ký thành công!' };
       }
       return { success: false, message: res.message || 'Đăng ký thất bại' };
@@ -135,6 +136,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthModalOpen(true);
   };
 
+  const openForgotModal = () => {
+    setAuthModalTab('forgot');
+    setIsAuthModalOpen(true);
+  };
+
   const closeAuthModal = () => {
     setIsAuthModalOpen(false);
   };
@@ -154,8 +160,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         updateUser,
         openLoginModal,
         openRegisterModal,
+        openForgotModal,
         closeAuthModal,
-        setAuthModalTab
+        setAuthModalTab,
+        setAuthenticatedUser
       }}
     >
       {children}

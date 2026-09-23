@@ -164,7 +164,7 @@ export function SettingsView({
   const handleExportData = () => {
     try {
       const exportPayload = {
-        exportVersion: '1.2.0',
+        exportVersion: '1.5.0',
         exportedAt: new Date().toISOString(),
         user: {
           name: user?.name,
@@ -297,7 +297,7 @@ export function SettingsView({
                   {t('settings.title')}
                 </h1>
                 <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border border-indigo-500/25">
-                  v1.2.0
+                  v1.5.0
                 </span>
               </div>
               <p className={`text-xs mt-1 ${isDark ? 'text-neutral-400' : 'text-slate-500'}`}>
