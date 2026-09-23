@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import { exec } from 'child_process';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes';
 import { errorHandler } from './server/middlewares/errorHandler';
@@ -37,7 +38,31 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[Personal LMS Server] listening at http://0.0.0.0:${PORT}`);
+    console.log(`\n  ✨ Planora LMS Platform v1.5.0 is running!`);
+    console.log(`  ➜  Local:   http://localhost:${PORT}`);
+    console.log(`  ➜  Network: http://0.0.0.0:${PORT}`);
+    console.log(`  ➜  Opening browser automatically at http://localhost:${PORT}...\n`);
+    
+    // Automatically open browser on local development machine
+    if (process.env.NODE_ENV !== 'production' && !process.env.K_SERVICE) {
+      const url = `http://localhost:${PORT}`;
+      const platform = process.platform;
+      try {
+        if (platform === 'win32') {
+          // On Windows, launch Chrome specifically, falling back to default browser
+          exec(`start chrome "${url}" || start "" "${url}"`, () => {});
+        } else if (platform === 'darwin') {
+          // On macOS, launch Chrome specifically, falling back to default browser
+          exec(`open -a "Google Chrome" "${url}" || open "${url}"`, () => {});
+        } else if (process.env.DISPLAY) {
+          // On Linux with active GUI display
+          exec(`google-chrome "${url}" || xdg-open "${url}"`, () => {});
+        }
+      } catch {
+        // Silently ignore if running in headless environment
+      }
+    }
+
     // Non-blocking database connection attempt after port 3000 is open
     connectDatabase().catch(() => {});
   });
