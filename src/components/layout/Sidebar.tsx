@@ -63,7 +63,7 @@ export function Sidebar({
     { id: 'ai', label: t('nav.ai'), icon: Bot, highlight: true }
   ];
 
-  // Chỉ role admin mới có thêm menu là trang quản lý dữ liệu tài khoản và trạng thái online
+  // Append administrative user management view if current user has admin role
   const navItems: NavItem[] = isAdmin 
     ? [
         ...baseNavItems,

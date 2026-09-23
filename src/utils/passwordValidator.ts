@@ -2,10 +2,10 @@ export interface PasswordValidationResult {
   valid: boolean;
   message: string;
   rules: {
-    minLength: boolean; // >= 8 ký tự
-    hasUpper: boolean;   // Chữ cái in hoa (A-Z)
-    hasNumber: boolean;  // Số (0-9)
-    hasSpecial: boolean; // Ký tự đặc biệt (như @, #, $, %, ...)
+    minLength: boolean; // Minimum 8 characters
+    hasUpper: boolean;   // Uppercase letter (A-Z)
+    hasNumber: boolean;  // Number (0-9)
+    hasSpecial: boolean; // Special character (@, #, $, %, etc.)
   };
 }
 

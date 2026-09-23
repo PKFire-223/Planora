@@ -467,8 +467,7 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // CRITICAL REQUIREMENT: "người dùng mới auto nhận tiếng anh"
-  // If no saved preference exists in localStorage, DEFAULT TO 'en'!
+  // Default system language to English for new users if no stored preference exists
   const [language, setLanguageState] = useState<Language>(() => {
     try {
       const saved = localStorage.getItem('planora_language');

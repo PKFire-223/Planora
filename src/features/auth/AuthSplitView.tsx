@@ -253,7 +253,7 @@ export function AuthSplitView({
       isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-white text-slate-900'
     }`}>
       {/* ========================================================================= */}
-      {/* NỬA TRÁI (LEFT HALF): THÔNG TIN GIỚI THIỆU & BRANDING GỌN GÀNG             */}
+      {/* LEFT HALF: BRANDING & SYSTEM OVERVIEW                                      */}
       {/* ========================================================================= */}
       <div className={`w-full lg:w-5/12 xl:w-5/12 p-6 sm:p-8 lg:p-10 flex flex-col justify-between relative overflow-hidden border-b lg:border-b-0 lg:border-r shrink-0 transition-colors ${
         isDark 
@@ -358,13 +358,13 @@ export function AuthSplitView({
       </div>
 
       {/* ========================================================================= */}
-      {/* NỬA PHẢI (RIGHT HALF): FORM LOGIN / REGISTER / FORGOT PASSWORD             */}
+      {/* RIGHT HALF: LOGIN / REGISTER / FORGOT PASSWORD FORMS                       */}
       {/* ========================================================================= */}
       <div className={`flex-1 flex flex-col justify-center px-6 sm:px-12 md:px-16 lg:px-16 xl:px-24 py-6 overflow-y-auto ${
         isDark ? 'bg-neutral-950 text-white' : 'bg-white text-slate-900'
       }`}>
         <div className="w-full max-w-lg mx-auto flex flex-col justify-center">
-          {/* Top Switcher: 3 NÚT [ ĐĂNG NHẬP | ĐĂNG KÝ | QUÊN MẬT KHẨU ] */}
+          {/* Form Mode Switcher: Login | Register | Forgot Password */}
           <div className="flex items-center justify-center mb-5">
             <div className={`p-1 rounded-xl border flex items-center text-xs sm:text-sm font-semibold w-full sm:w-auto ${
               isDark ? 'bg-neutral-900 border-neutral-800' : 'bg-slate-100 border-slate-200'
@@ -463,9 +463,7 @@ export function AuthSplitView({
             </div>
           )}
 
-          {/* ================================================================= */}
-          {/* 1. FORM ĐĂNG NHẬP (LOGIN)                                         */}
-          {/* ================================================================= */}
+          {/* 1. Login Form */}
           {mode === 'login' && (
             <div>
               <div className="mb-4">
@@ -567,9 +565,7 @@ export function AuthSplitView({
             </div>
           )}
 
-          {/* ================================================================= */}
-          {/* 2. FORM ĐĂNG KÝ (REGISTER)                                        */}
-          {/* ================================================================= */}
+          {/* 2. Registration Form */}
           {mode === 'register' && (
             <div>
               <div className="mb-4">
@@ -697,9 +693,7 @@ export function AuthSplitView({
             </div>
           )}
 
-          {/* ================================================================= */}
-          {/* 3. FORM QUÊN MẬT KHẨU (GỬI VỀ EMAIL THẬT + XÁC THỰC OTP)         */}
-          {/* ================================================================= */}
+          {/* 3. Password Reset Form */}
           {mode === 'forgot' && (
             <div>
               <div className="mb-4">
@@ -711,7 +705,7 @@ export function AuthSplitView({
                 </p>
               </div>
 
-              {/* STEP 1: NHẬP EMAIL ĐỂ GỬI MÃ OTP THẬT */}
+              {/* Step 1: Request OTP code via email */}
               {forgotStep === 'email' && (
                 <form onSubmit={handleRequestOtp} className="space-y-4">
                   <div>
@@ -762,7 +756,7 @@ export function AuthSplitView({
                 </form>
               )}
 
-              {/* STEP 2: NHẬP MÃ OTP & MẬT KHẨU MỚI (TUÂN THỦ 8 KÝ TỰ, CHỮ HOA, SỐ, ĐẶC BIỆT @) */}
+              {/* Step 2: Validate OTP and reset password */}
               {forgotStep === 'otp_reset' && (
                 <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5">
                   {/* Email Delivery Banner / Dev Inbox Link */}

@@ -289,9 +289,9 @@ export function NotificationsView({
                   </div>
                 </div>
 
-                {/* Right Action Buttons */}
+                {/* Quick actions */}
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {/* Quick "Đi tới trang" button */}
+                  {/* Quick navigation button */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -309,7 +309,7 @@ export function NotificationsView({
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
-                  {/* Quick "Xóa" button */}
+                  {/* Quick delete button */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -332,7 +332,7 @@ export function NotificationsView({
         )}
       </div>
 
-      {/* Modal Hiện Chi Tiết Thông Báo khi bấm vào */}
+      {/* Notification Details Modal */}
       {selectedNotification && (() => {
         const target = resolveTarget(selectedNotification);
         const meta = getTypeMeta(selectedNotification.type);
@@ -415,11 +415,11 @@ export function NotificationsView({
                 </div>
               </div>
 
-              {/* Modal Footer with Actions: Đi tới trang + Xóa thông báo + Đóng */}
+              {/* Modal footer actions */}
               <div className={`p-4 sm:p-5 border-t flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2.5 ${
                 isDark ? 'bg-neutral-950/70 border-neutral-800' : 'bg-slate-50/80 border-slate-200'
               }`}>
-                {/* Nút Xóa thông báo */}
+                {/* Delete notification trigger */}
                 <button
                   type="button"
                   onClick={() => handleDeleteFromModal(selectedNotification)}
@@ -433,7 +433,7 @@ export function NotificationsView({
                   <span>Xóa thông báo</span>
                 </button>
 
-                {/* Action Controls: Đóng & Đi tới trang */}
+                {/* Navigation and close triggers */}
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="button"
@@ -447,7 +447,7 @@ export function NotificationsView({
                     Đóng
                   </button>
 
-                  {/* Nút Đi tới trang */}
+                  {/* Navigate to linked section */}
                   <button
                     type="button"
                     onClick={() => handleGoToPage(selectedNotification)}

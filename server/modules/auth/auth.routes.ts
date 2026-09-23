@@ -247,7 +247,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     name: String(name).trim(),
     email: normalizedEmail,
     passwordHash: hashPassword(password),
-    role: 'student', // Đăng ký tự do luôn là học viên / thành viên
+    role: 'student', // Public registrations default to student role
     createdAt: new Date().toISOString(),
     lastActiveAt: new Date().toISOString(),
     studentCode: `STU-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -283,7 +283,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
   });
 });
 
-// POST /api/auth/forgot-password - Gửi mã OTP xác nhận về email thật
+// POST /api/auth/forgot-password - Send OTP verification code to registered email
 authRouter.post('/forgot-password', async (req: Request, res: Response) => {
   const { email } = req.body;
 
@@ -348,7 +348,7 @@ authRouter.post('/forgot-password', async (req: Request, res: Response) => {
   });
 });
 
-// POST /api/auth/verify-reset-code - Kiểm tra tính hợp lệ của mã OTP
+// POST /api/auth/verify-reset-code - Validate OTP code
 authRouter.post('/verify-reset-code', (req: Request, res: Response) => {
   const { email, code } = req.body;
 
@@ -385,7 +385,7 @@ authRouter.post('/verify-reset-code', (req: Request, res: Response) => {
   res.json({ success: true, message: 'Mã xác nhận chính xác' });
 });
 
-// POST /api/auth/reset-password - Đặt lại mật khẩu mới với mã OTP & xác thực độ mạnh
+// POST /api/auth/reset-password - Reset password with verified OTP and policy check
 authRouter.post('/reset-password', async (req: Request, res: Response) => {
   const { email, code, newPassword } = req.body;
 

@@ -633,7 +633,7 @@ function PlanoraWorkspace() {
     setViewMode('landing');
   };
 
-  // VIEW 1: Trang Giới Thiệu (Mở ra đầu tiên) - KHÔNG hiện thông báo Toast ở đây
+  // View 1: Landing presentation page
   if (viewMode === 'landing') {
     return (
       <LandingPageView
@@ -649,7 +649,7 @@ function PlanoraWorkspace() {
     );
   }
 
-  // VIEW 2: Trang Đăng Nhập & Đăng Ký Split-Screen (Không dùng Pop-up)
+  // View 2: Split-screen authentication view
   if (viewMode === 'auth') {
     return (
       <AuthSplitView
@@ -660,7 +660,7 @@ function PlanoraWorkspace() {
     );
   }
 
-  // VIEW 3: Không Gian Học Tập Planora LMS Workspace (Yêu cầu đăng nhập chuẩn như web bình thường)
+  // View 3: Planora LMS Workspace (requires authenticated user)
   if (!user) {
     return (
       <AuthSplitView

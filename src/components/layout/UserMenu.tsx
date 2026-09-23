@@ -67,14 +67,14 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
         <span className="w-2 h-2 rounded-full bg-emerald-500 absolute -bottom-0.5 -right-0.5 ring-2 ring-white dark:ring-neutral-900" />
       </button>
 
-      {/* Pop-up menu tài khoản */}
+      {/* User dropdown menu */}
       {isOpen && (
         <div className={`absolute right-0 mt-2 w-72 sm:w-80 rounded-2xl border shadow-xl z-50 p-2 animate-in fade-in zoom-in-95 duration-150 ${
           isDark 
             ? 'bg-neutral-900 border-neutral-800 text-white shadow-black/60' 
             : 'bg-white border-slate-200 text-slate-900 shadow-indigo-100'
         }`}>
-          {/* Header Giới thiệu tài khoản */}
+          {/* User profile card */}
           <div className={`p-3 rounded-xl mb-1.5 border flex items-start gap-3 ${
             isDark ? 'bg-neutral-950/80 border-neutral-800' : 'bg-slate-50 border-slate-200/80'
           }`}>
@@ -193,7 +193,7 @@ export function UserMenu({ onNavigate, onGoToLanding }: UserMenuProps) {
             )}
           </div>
 
-          {/* Divider & Đăng xuất */}
+          {/* Divider & Sign out */}
           <div className={`pt-1.5 mt-1 border-t ${isDark ? 'border-neutral-800' : 'border-slate-100'}`}>
             <button
               onClick={async () => {

@@ -61,7 +61,7 @@ export function NotificationPopover({
 
   return (
     <div className="relative" ref={popoverRef}>
-      {/* Nút chuông thông báo trong Header */}
+      {/* Notification Bell Trigger */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         title="Thông báo hệ thống"
@@ -81,7 +81,7 @@ export function NotificationPopover({
         )}
       </button>
 
-      {/* Pop-up hiện thông báo */}
+      {/* Notifications Popover Menu */}
       {isOpen && (
         <div className={`absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl border shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 ${
           isDark 
@@ -184,7 +184,7 @@ export function NotificationPopover({
             )}
           </div>
 
-          {/* Footer: Xem tất cả thông báo */}
+          {/* Footer: View all notifications */}
           <div className={`p-2.5 border-t text-center ${
             isDark ? 'bg-neutral-950/50 border-neutral-800' : 'bg-slate-50 border-slate-200'
           }`}>

@@ -143,7 +143,7 @@ export function CoursesView({
         </button>
       </div>
 
-      {/* 2. Top Metrics Strip (Khối thống kê tổng quan) */}
+      {/* 2. Top Metrics Overview Strip */}
       <CourseMetricsStrip
         courses={courses}
         selectedSemester={semesterFilter}

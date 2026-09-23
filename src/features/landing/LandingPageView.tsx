@@ -121,7 +121,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
           {/* Official Logo */}
           <PlanoraLogo size="lg" />
 
-          {/* Desktop Nav Items: Giãn khoảng cách rộng rãi (gap-10 sm:gap-12) & Bấm cuộn tới đúng section */}
+          {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-10 lg:gap-12 text-sm font-semibold">
             <button
               type="button"
@@ -242,7 +242,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
             Không còn nỗi lo trễ hạn hay bài tập dồn ứ. Planora cung cấp giải pháp toàn diện từ theo dõi tiến độ môn học, chia nhỏ bài tập bằng Gemini AI đến đo lường KPI học tập mỗi ngày.
           </p>
 
-          {/* CTA Buttons: Đã bỏ chữ "miễn phí", chỉ để "Bắt Đầu Ngay" */}
+          {/* Call To Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
             <button
               onClick={() => onOpenAuth('register')}
@@ -265,15 +265,13 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
             </button>
           </div>
 
-          {/* ===================================================================== */}
-          {/* MOCKUP PREVIEW CARD: GIAO DIỆN HỌC TẬP TRỰC QUAN PLANORA              */}
-          {/* ===================================================================== */}
+          {/* Product UI Interactive Mockup Preview */}
           <div className={`p-4 sm:p-6 rounded-2xl border text-left transition-all ${
             isDark 
               ? 'bg-neutral-900 border-neutral-800' 
               : 'bg-white border-slate-200 shadow-xs'
           }`}>
-            {/* Window bar: Bỏ đường dẫn website app.planora.edu.vn */}
+            {/* Mockup Window Top Bar */}
             <div className={`flex items-center justify-between pb-4 mb-5 border-b text-xs ${
               isDark ? 'border-neutral-800 text-neutral-400' : 'border-slate-200 text-slate-500'
             }`}>
@@ -332,7 +330,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
                 </div>
               </div>
 
-              {/* Card 2: AI Task Breakdown preview - ĐÃ SỬA TOÀN BỘ ĐỊNH DẠNG BAN ĐÊM, KHÔNG CÒN LỖI CHỮ TRẮNG NỀN TRẮNG */}
+              {/* Card 2: AI Task Breakdown preview */}
               <div className={`p-4 rounded-2xl border transition-colors ${
                 isDark ? 'bg-neutral-950 border-neutral-800' : 'bg-slate-50 border-slate-200'
               }`}>
@@ -427,7 +425,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
       </section>
 
       {/* ========================================================================= */}
-      {/* 3. SECTION 1: TÍNH NĂNG (FEATURES)                                       */}
+      {/* SECTION 1: CORE FEATURES & CAPABILITIES                                    */}
       {/* ========================================================================= */}
       <section id="features" className="py-20 px-6 max-w-7xl mx-auto scroll-mt-24">
         <div className="text-center max-w-3xl mx-auto mb-14">
@@ -473,7 +471,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. SECTION 2: TRỢ LÝ AI (AI ASSISTANT ENGINE - CHUYÊN BIỆT THEO YÊU CẦU)   */}
+      {/* SECTION 2: AI ASSISTANT & SOCRATIC TUTOR                                  */}
       {/* ========================================================================= */}
       <section id="ai-assistant" className={`py-20 px-6 scroll-mt-24 border-y transition-colors ${
         isDark ? 'bg-neutral-900/50 border-neutral-800' : 'bg-indigo-50/40 border-indigo-100'
@@ -584,7 +582,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
       </section>
 
       {/* ========================================================================= */}
-      {/* 5. SECTION 3: THỐNG KÊ (STATS)                                           */}
+      {/* SECTION 3: PERFORMANCE METRICS & COMMUNITY REACH                           */}
       {/* ========================================================================= */}
       <section id="stats" className={`py-20 border-b scroll-mt-24 transition-colors ${
         isDark ? 'bg-neutral-900/40 border-neutral-800' : 'bg-white border-slate-200'
@@ -617,7 +615,7 @@ export function LandingPageView({ onOpenAuth, onEnterApp }: LandingPageViewProps
       </section>
 
       {/* ========================================================================= */}
-      {/* 6. SECTION 4: ĐÁNH GIÁ (REVIEWS)                                         */}
+      {/* SECTION 4: USER TESTIMONIALS & REVIEWS                                     */}
       {/* ========================================================================= */}
       <section id="reviews" className="py-20 px-6 max-w-7xl mx-auto scroll-mt-24">
         <div className="text-center max-w-2xl mx-auto mb-14">
