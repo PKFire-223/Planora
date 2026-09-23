@@ -13,6 +13,9 @@ export interface UserItem {
   studentCode?: string;
   faculty?: string;
   bio?: string;
+  avatar?: string;
+  coverImage?: string;
+  schoolName?: string;
 }
 
 const ADMIN_EMAIL = (process.env.SEED_SYSTEM_ADMIN_EMAIL || 'systemadmin@gmail.com').toLowerCase();
@@ -225,7 +228,61 @@ authRouter.get('/me', (req: Request, res: Response) => {
       phone: user.phone,
       studentCode: user.studentCode,
       faculty: user.faculty,
-      bio: user.bio
+      bio: user.bio,
+      avatar: user.avatar,
+      coverImage: user.coverImage,
+      schoolName: user.schoolName
+    }
+  });
+});
+
+// PUT /api/auth/profile - Update user profile
+authRouter.put('/profile', (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+  const { name, phone, studentCode, faculty, bio, avatar, coverImage, schoolName } = req.body;
+
+  let targetUser: UserItem | undefined;
+  if (token && sessions.has(token)) {
+    const session = sessions.get(token)!;
+    targetUser = usersStore.find(u => u.id === session.userId);
+  }
+  if (!targetUser && usersStore.length > 0) {
+    targetUser = usersStore[0];
+  }
+
+  if (!targetUser) {
+    res.status(404).json({ success: false, message: 'Không tìm thấy người dùng' });
+    return;
+  }
+
+  if (name !== undefined) targetUser.name = String(name).trim();
+  if (phone !== undefined) targetUser.phone = String(phone).trim();
+  if (studentCode !== undefined) targetUser.studentCode = String(studentCode).trim();
+  if (faculty !== undefined) targetUser.faculty = String(faculty).trim();
+  if (bio !== undefined) targetUser.bio = String(bio).trim();
+  if (avatar !== undefined) targetUser.avatar = avatar;
+  if (coverImage !== undefined) targetUser.coverImage = coverImage;
+  if (schoolName !== undefined) targetUser.schoolName = String(schoolName).trim();
+  targetUser.lastActiveAt = new Date().toISOString();
+
+  res.json({
+    success: true,
+    message: 'Cập nhật hồ sơ thành công',
+    user: {
+      id: targetUser.id,
+      name: targetUser.name,
+      email: targetUser.email,
+      role: targetUser.role,
+      createdAt: targetUser.createdAt,
+      lastActiveAt: targetUser.lastActiveAt,
+      phone: targetUser.phone,
+      studentCode: targetUser.studentCode,
+      faculty: targetUser.faculty,
+      bio: targetUser.bio,
+      avatar: targetUser.avatar,
+      coverImage: targetUser.coverImage,
+      schoolName: targetUser.schoolName
     }
   });
 });

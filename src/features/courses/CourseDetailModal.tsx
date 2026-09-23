@@ -19,8 +19,11 @@ import {
   ExternalLink,
   Edit3
 } from 'lucide-react';
-import { Course, CourseLesson, CourseMaterial } from '../../types';
+import { Course, CourseLesson, CourseMaterial, FileAttachment } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
+import { FileUploadZone } from '../../components/common/FileUploadZone';
+import { AttachmentList } from '../../components/common/AttachmentList';
+import { formatBytes } from '../../utils/fileUpload';
 
 interface CourseDetailModalProps {
   course: Course;
@@ -143,7 +146,40 @@ export function CourseDetailModal({
   // Delete material
   const handleDeleteMaterial = async (matId: string) => {
     const updatedMaterials = materials.filter(m => m.id !== matId);
-    await onUpdateCourse(course.id, { materials: updatedMaterials });
+    const updatedAttachments = (course.attachments || []).filter(a => a.id !== matId);
+    await onUpdateCourse(course.id, { 
+      materials: updatedMaterials,
+      attachments: updatedAttachments
+    });
+  };
+
+  // Upload files to course
+  const handleCourseFilesUploaded = async (newFiles: FileAttachment[]) => {
+    const existingAttachments = course.attachments || [];
+    const updatedAttachments = [...existingAttachments, ...newFiles];
+
+    const newMaterials: CourseMaterial[] = newFiles.map(f => ({
+      id: f.id,
+      name: f.name,
+      type: f.category === 'slide' ? 'slide' : f.category === 'code' ? 'code' : 'pdf',
+      url: f.url,
+      size: formatBytes(f.size)
+    }));
+    const updatedMaterials = [...materials, ...newMaterials];
+
+    await onUpdateCourse(course.id, {
+      attachments: updatedAttachments,
+      materials: updatedMaterials
+    });
+  };
+
+  const handleDeleteCourseAttachment = async (fileId: string) => {
+    const updatedAttachments = (course.attachments || []).filter(a => a.id !== fileId);
+    const updatedMaterials = materials.filter(m => m.id !== fileId);
+    await onUpdateCourse(course.id, {
+      attachments: updatedAttachments,
+      materials: updatedMaterials
+    });
   };
 
   const handleQuickAskAi = (prompt: string) => {
@@ -507,17 +543,36 @@ export function CourseDetailModal({
 
           {/* TAB 3: MATERIALS & SLIDES */}
           {activeSubTab === 'materials' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className={`text-xs ${isDark ? 'text-neutral-400' : 'text-slate-600'}`}>
-                  File bài giảng, slide bài tập, tài liệu giáo trình và đường dẫn hữu ích:
+            <div className="space-y-5">
+              {/* Direct File Upload Zone */}
+              <div className="space-y-2">
+                <FileUploadZone
+                  onFilesUploaded={handleCourseFilesUploaded}
+                  label="Tải tài liệu, giáo trình hoặc slide bài giảng"
+                  hint="Kéo thả tệp từ máy tính (PDF, PPTX, DOCX, ZIP, Code) để lưu trữ vào môn học"
+                />
+              </div>
+
+              {course.attachments && course.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <AttachmentList
+                    title="Tệp Đính Kèm Của Môn Học"
+                    attachments={course.attachments}
+                    onDeleteAttachment={handleDeleteCourseAttachment}
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-2 border-t dark:border-neutral-800 border-slate-200">
+                <p className={`text-xs font-bold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                  Danh Mục Giáo Trình & Đường Dẫn Học Tập:
                 </p>
                 <button
                   onClick={() => setIsAddingMaterial(!isAddingMaterial)}
                   className="px-3 py-1.5 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
                   <Plus className="w-3.5 h-3.5" />
-                  <span>Thêm tài liệu</span>
+                  <span>Thêm liên kết/tài liệu ngoài</span>
                 </button>
               </div>
 

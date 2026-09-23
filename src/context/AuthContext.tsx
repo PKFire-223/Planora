@@ -120,6 +120,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('planora_user', JSON.stringify(updated));
       return updated;
     });
+
+    // Sync to backend if token exists
+    api.updateProfile(data, token || undefined).catch(() => {});
   };
 
   const openLoginModal = () => {

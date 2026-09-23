@@ -794,6 +794,8 @@ function PlanoraWorkspace() {
                     notes={notes}
                     onCreateTask={handleCreateTask}
                     onCreateNote={handleCreateNote}
+                    onCreateCourse={handleCreateCourse}
+                    onNavigate={(tab) => setActiveTab(tab as any)}
                   />
                 )}
 
@@ -816,7 +818,13 @@ function PlanoraWorkspace() {
                 )}
 
                 {activeTab === 'profile' && (
-                  <ProfileView />
+                  <ProfileView
+                    onNavigate={setActiveTab}
+                    coursesCount={courses.length}
+                    completedTasksCount={tasks.filter(t => t.status === 'done').length}
+                    goalsCount={goals.length}
+                    notesCount={notes.length}
+                  />
                 )}
 
                 {activeTab === 'settings' && (

@@ -1,4 +1,4 @@
-import { Sparkles, Sun, Moon, LogIn, Menu, Languages, Settings as SettingsIcon } from 'lucide-react';
+import { Sparkles, Sun, Moon, LogIn, Menu, Languages } from 'lucide-react';
 import { ActiveTab, NotificationItem } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
@@ -89,22 +89,6 @@ export function Header({
           <span className="uppercase tracking-wider font-bold text-[11px]">
             {language === 'en' ? 'EN' : 'VI'}
           </span>
-        </button>
-
-        {/* Quick Settings Shortcut */}
-        <button
-          type="button"
-          onClick={() => onNavigate('settings')}
-          title={t('nav.settings')}
-          className={`p-2 rounded-xl border transition-all cursor-pointer hidden sm:flex items-center justify-center ${
-            activeTab === 'settings'
-              ? 'bg-indigo-600 text-white border-indigo-600'
-              : isDark
-                ? 'bg-neutral-900 border-neutral-800 text-neutral-300 hover:bg-neutral-800 hover:text-white'
-                : 'bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200'
-          }`}
-        >
-          <SettingsIcon className="w-4 h-4" />
         </button>
 
         {/* Ask AI button */}

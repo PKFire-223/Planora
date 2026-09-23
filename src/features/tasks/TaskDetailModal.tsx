@@ -12,10 +12,13 @@ import {
   Edit3, 
   Save, 
   FileText, 
-  CheckSquare
+  CheckSquare,
+  Paperclip
 } from 'lucide-react';
-import { Task, Course, TaskSubtask } from '../../types';
+import { Task, Course, TaskSubtask, FileAttachment } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
+import { FileUploadZone } from '../../components/common/FileUploadZone';
+import { AttachmentList } from '../../components/common/AttachmentList';
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -55,7 +58,8 @@ export function TaskDetailModal({
     estimatedMinutes: 30,
     description: '',
     notes: '',
-    subtasks: [] as TaskSubtask[]
+    subtasks: [] as TaskSubtask[],
+    attachments: [] as FileAttachment[]
   });
 
   useEffect(() => {
@@ -69,7 +73,8 @@ export function TaskDetailModal({
         estimatedMinutes: task.estimatedMinutes,
         description: task.description || '',
         notes: task.notes || '',
-        subtasks: task.subtasks ? [...task.subtasks] : []
+        subtasks: task.subtasks ? [...task.subtasks] : [],
+        attachments: task.attachments ? [...task.attachments] : []
       });
       setIsEditing(false);
     }
@@ -136,11 +141,32 @@ export function TaskDetailModal({
         estimatedMinutes: Number(editForm.estimatedMinutes) || 30,
         description: editForm.description,
         notes: editForm.notes,
-        subtasks: editForm.subtasks
+        subtasks: editForm.subtasks,
+        attachments: editForm.attachments
       });
       setIsEditing(false);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const currentAttachments = (isEditing ? editForm.attachments : task.attachments) || [];
+
+  const handleTaskFilesUploaded = async (newFiles: FileAttachment[]) => {
+    const updated = [...currentAttachments, ...newFiles];
+    if (isEditing) {
+      setEditForm(prev => ({ ...prev, attachments: updated }));
+    } else {
+      await onUpdateTask(task.id, { attachments: updated });
+    }
+  };
+
+  const handleDeleteTaskAttachment = async (fileId: string) => {
+    const updated = currentAttachments.filter(a => a.id !== fileId);
+    if (isEditing) {
+      setEditForm(prev => ({ ...prev, attachments: updated }));
+    } else {
+      await onUpdateTask(task.id, { attachments: updated });
     }
   };
 
@@ -583,6 +609,31 @@ export function TaskDetailModal({
                 }`}
               />
             )}
+          </div>
+
+          {/* Task File Attachments Section */}
+          <div className="space-y-3 pt-3 border-t dark:border-neutral-800 border-slate-200">
+            <div className="flex items-center justify-between">
+              <h3 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                isDark ? 'text-neutral-400' : 'text-slate-500'
+              }`}>
+                <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                <span>Tệp Đính Kèm ({currentAttachments.length})</span>
+              </h3>
+            </div>
+
+            <FileUploadZone
+              onFilesUploaded={handleTaskFilesUploaded}
+              label="Đính kèm đề bài, tài liệu hoặc ảnh kết quả"
+              hint="Kéo thả hoặc bấm để tải lên (PDF, DOCX, ZIP, Code, Ảnh bài làm)"
+              compact
+            />
+
+            <AttachmentList
+              attachments={currentAttachments}
+              onDeleteAttachment={handleDeleteTaskAttachment}
+              emptyText="Chưa có file nào được đính kèm vào nhiệm vụ này"
+            />
           </div>
         </div>
 

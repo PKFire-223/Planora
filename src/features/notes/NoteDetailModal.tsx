@@ -11,10 +11,13 @@ import {
   Calendar,
   BookOpen,
   StickyNote,
-  Plus
+  Plus,
+  Paperclip
 } from 'lucide-react';
-import { Note, Course } from '../../types';
+import { Note, Course, FileAttachment } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
+import { FileUploadZone } from '../../components/common/FileUploadZone';
+import { AttachmentList } from '../../components/common/AttachmentList';
 
 interface NoteDetailModalProps {
   note: Note | null;
@@ -48,7 +51,8 @@ export function NoteDetailModal({
     content: '',
     tags: [] as string[],
     courseId: '',
-    isPinned: false
+    isPinned: false,
+    attachments: [] as FileAttachment[]
   });
 
   useEffect(() => {
@@ -58,7 +62,8 @@ export function NoteDetailModal({
         content: note.content,
         tags: [...note.tags],
         courseId: note.courseId || '',
-        isPinned: Boolean(note.isPinned)
+        isPinned: Boolean(note.isPinned),
+        attachments: note.attachments ? [...note.attachments] : []
       });
       setIsEditing(false);
       setCopied(false);
@@ -106,6 +111,26 @@ export function NoteDetailModal({
     }));
   };
 
+  const currentAttachments = (isEditing ? editForm.attachments : note.attachments) || [];
+
+  const handleNoteFilesUploaded = async (newFiles: FileAttachment[]) => {
+    const updated = [...currentAttachments, ...newFiles];
+    if (isEditing) {
+      setEditForm(prev => ({ ...prev, attachments: updated }));
+    } else {
+      await onUpdateNote(note.id, { attachments: updated });
+    }
+  };
+
+  const handleDeleteNoteAttachment = async (fileId: string) => {
+    const updated = currentAttachments.filter(a => a.id !== fileId);
+    if (isEditing) {
+      setEditForm(prev => ({ ...prev, attachments: updated }));
+    } else {
+      await onUpdateNote(note.id, { attachments: updated });
+    }
+  };
+
   const handleSave = async () => {
     if (!editForm.title.trim() || !editForm.content.trim()) return;
     setIsSaving(true);
@@ -115,7 +140,8 @@ export function NoteDetailModal({
         content: editForm.content.trim(),
         tags: editForm.tags,
         courseId: editForm.courseId || undefined,
-        isPinned: editForm.isPinned
+        isPinned: editForm.isPinned,
+        attachments: editForm.attachments
       });
       setIsEditing(false);
     } finally {
@@ -307,6 +333,31 @@ export function NoteDetailModal({
               >
                 {note.content}
               </div>
+
+              {/* Attachments Section (Reader view) */}
+              <div className="space-y-3 pt-3 border-t dark:border-neutral-800 border-slate-200">
+                <div className="flex items-center justify-between">
+                  <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                    isDark ? 'text-neutral-400' : 'text-slate-500'
+                  }`}>
+                    <Paperclip className="w-3.5 h-3.5 text-indigo-500" />
+                    <span>Tài Liệu & Hình Ảnh Đính Kèm ({currentAttachments.length})</span>
+                  </h4>
+                </div>
+
+                <FileUploadZone
+                  onFilesUploaded={handleNoteFilesUploaded}
+                  label="Thêm tệp hoặc ảnh vào ghi chú"
+                  hint="Kéo thả hoặc chọn tệp (Ảnh bài giảng, PDF, code, file tóm tắt)"
+                  compact
+                />
+
+                <AttachmentList
+                  attachments={currentAttachments}
+                  onDeleteAttachment={handleDeleteNoteAttachment}
+                  emptyText="Chưa có tài liệu hoặc hình ảnh nào được đính kèm vào ghi chú này"
+                />
+              </div>
             </div>
           ) : (
             /* Edit Mode */
@@ -439,6 +490,28 @@ export function NoteDetailModal({
                       ? 'bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600'
                       : 'bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400'
                   }`}
+                />
+              </div>
+
+              {/* Attachments Section (Edit mode) */}
+              <div className="space-y-3 pt-3 border-t dark:border-neutral-800 border-slate-200">
+                <div className="flex items-center justify-between">
+                  <label className={`block text-xs font-semibold ${isDark ? 'text-neutral-300' : 'text-slate-700'}`}>
+                    Tài liệu & Hình ảnh đính kèm ({editForm.attachments.length})
+                  </label>
+                </div>
+
+                <FileUploadZone
+                  onFilesUploaded={handleNoteFilesUploaded}
+                  label="Tải thêm tài liệu hoặc hình ảnh vào ghi chú"
+                  hint="Kéo thả hoặc chọn tệp (Ảnh, PDF, docx, code)"
+                  compact
+                />
+
+                <AttachmentList
+                  attachments={editForm.attachments}
+                  onDeleteAttachment={handleDeleteNoteAttachment}
+                  emptyText="Chưa có tệp đính kèm"
                 />
               </div>
             </div>

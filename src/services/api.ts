@@ -1,4 +1,4 @@
-import { Course, Task, Note, Goal, ErrorReport, User } from '../types';
+import { Course, Task, Note, Goal, ErrorReport, User, FileAttachment } from '../types';
 import {
   FALLBACK_COURSES,
   FALLBACK_TASKS,
@@ -134,6 +134,62 @@ export const api = {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       },
       () => ({ success: true })
+    );
+  },
+
+  async updateProfile(data: Partial<User>, token?: string): Promise<{ success: boolean; user: User; message?: string }> {
+    return request(
+      '/api/auth/profile',
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(data)
+      },
+      () => {
+        if (localUser) {
+          localUser = { ...localUser, ...data };
+        }
+        return {
+          success: true,
+          user: localUser || ({
+            id: 'local-user',
+            name: data.name || 'Người dùng',
+            email: 'user@planora.edu.vn',
+            role: 'student',
+            createdAt: new Date().toISOString(),
+            ...data
+          } as User),
+          message: 'Cập nhật thành công (Offline Mode)'
+        };
+      }
+    );
+  },
+
+  async getStorageStatus(): Promise<{
+    success: boolean;
+    engine: string;
+    isAwsConfigured: boolean;
+    summary: string;
+    recommendation: { currentStatus: string; awsEvaluation: string };
+    totalStoredFiles: number;
+  }> {
+    return request(
+      '/api/upload/status',
+      undefined,
+      () => ({
+        success: true,
+        engine: 'built_in_local',
+        isAwsConfigured: false,
+        summary: 'Đang sử dụng Planora Unified Local Storage (Không cần thiết lập AWS, hoạt động tức thì).',
+        recommendation: {
+          currentStatus: 'Hoạt động tối ưu và an toàn',
+          awsEvaluation: 'AWS S3 là tiêu chuẩn lưu trữ đám mây cao cấp cho doanh nghiệp. Tuy nhiên với ứng dụng cá nhân/học tập, hệ thống lưu trữ tích hợp sẵn của Planora là lựa chọn tiện lợi nhất vì không tốn chi phí và chạy mượt mà ngay cả khi ngoại tuyến.'
+        },
+        totalStoredFiles: 0
+      })
     );
   },
 
@@ -658,23 +714,74 @@ export const api = {
   // AI Assistant
   async askAi(
     question: string,
-    options?: string | { context?: string; persona?: string; userContext?: string }
+    options?: string | {
+      context?: string;
+      persona?: string;
+      userContext?: string;
+      history?: { role: 'user' | 'model'; text: string }[];
+      imageAttachment?: string;
+    }
   ): Promise<{ success: boolean; answer: string; source?: string; model?: string }> {
     const context = typeof options === 'string' ? options : options?.context;
     const persona = typeof options === 'object' ? options.persona : undefined;
     const userContext = typeof options === 'object' ? options.userContext : undefined;
+    const history = typeof options === 'object' ? options.history : undefined;
+    const imageAttachment = typeof options === 'object' ? options.imageAttachment : undefined;
 
     return request(
       '/api/ai/ask',
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, context, persona, userContext })
+        body: JSON.stringify({ question, context, persona, userContext, history, imageAttachment })
       },
       () => ({
         success: true,
         source: 'smart-assistant-cache',
-        answer: `Dưới góc nhìn kiến trúc phần mềm, bạn nên chia bài toán "${question}" theo nguyên tắc Đơn nhiệm (Single Responsibility) và tách biệt Model - Service - Controller. Việc này giúp code dễ mở rộng và kiểm thử.`
+        answer: `Dưới góc nhìn kiến trúc sư giáo dục Planora, bạn nên chia bài toán "${question}" theo lộ trình rõ ràng, kết hợp lý thuyết và thực hành dự án để đạt hiệu quả cao nhất.`
+      })
+    );
+  },
+
+  async generateCourseWithAi(
+    topic: string,
+    level?: string,
+    durationWeeks?: number
+  ): Promise<{
+    success: boolean;
+    course: any;
+    explanation?: string;
+  }> {
+    return request(
+      '/api/ai/generate-course',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, level, durationWeeks })
+      },
+      () => ({
+        success: true,
+        course: {
+          title: `Khóa học: ${topic}`,
+          code: `AI-${Date.now().toString().slice(-4)}`,
+          credits: 3,
+          instructor: 'Hội đồng Cố vấn Planora AI',
+          color: 'indigo',
+          description: `Khóa học chuyên sâu về ${topic} được thiết kế theo chuẩn sư phạm hiện đại.`,
+          status: 'in_progress',
+          progress: 0,
+          totalLessons: durationWeeks || 8,
+          completedLessons: 0,
+          syllabus: Array.from({ length: durationWeeks || 8 }, (_, i) => ({
+            week: i + 1,
+            title: `Tuần ${i + 1}: Chuyên đề ${i + 1} về ${topic}`,
+            desc: `Nắm vững nguyên lý và bài tập thực hành tuần ${i + 1}.`
+          })),
+          initialTasks: [
+            { title: `[${topic}] Đọc giáo trình tuần 1 & cài đặt môi trường`, estimatedMinutes: 45, priority: 'high' },
+            { title: `[${topic}] Làm bài tập thực hành tuần 1`, estimatedMinutes: 60, priority: 'medium' }
+          ]
+        }
       })
     );
   },

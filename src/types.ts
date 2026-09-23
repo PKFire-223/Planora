@@ -47,6 +47,17 @@ export interface Course {
   syllabus?: CourseSyllabusWeek[];
   lessons?: CourseLesson[];
   materials?: CourseMaterial[];
+  attachments?: FileAttachment[];
+}
+
+export interface FileAttachment {
+  id: string;
+  name: string;
+  size: number; // in bytes
+  type: string; // mime type or file category
+  url: string; // file URL or Base64 data URL
+  uploadedAt: string;
+  category?: 'document' | 'image' | 'slide' | 'code' | 'archive' | 'other';
 }
 
 export interface TaskSubtask {
@@ -68,6 +79,7 @@ export interface Task {
   description?: string;
   subtasks?: TaskSubtask[];
   notes?: string;
+  attachments?: FileAttachment[];
   createdAt?: string;
 }
 
@@ -78,6 +90,7 @@ export interface Note {
   content: string;
   tags: string[];
   isPinned: boolean;
+  attachments?: FileAttachment[];
   updatedAt: string;
 }
 
@@ -112,10 +125,17 @@ export interface User {
   email: string;
   role: 'admin' | 'student';
   avatar?: string;
+  coverImage?: string; // Tùy chỉnh ảnh bìa / hình nền hồ sơ
   bio?: string;
   phone?: string;
   studentCode?: string;
   faculty?: string;
+  schoolName?: string;
+  socialLinks?: {
+    github?: string;
+    linkedin?: string;
+    website?: string;
+  };
   createdAt: string;
   lastActiveAt?: string;
 }
@@ -145,6 +165,9 @@ export interface TimetableEntry {
   color: 'indigo' | 'sky' | 'emerald' | 'amber' | 'rose' | 'purple' | 'teal';
   day?: DayOfWeek; // Thứ trong tuần nếu đã xếp lịch
   session?: DaySession; // Sáng hoặc Chiều
+  courseId?: string; // ID môn học liên kết
+  courseCode?: string; // Mã môn học liên kết
+  credits?: number; // Số tín chỉ
 }
 
 export type ActiveTab = 
