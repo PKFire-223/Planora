@@ -207,7 +207,7 @@ export function Sidebar({
   return (
     <>
       {/* 1. Desktop Persistent Sidebar (>= 1024px) */}
-      <aside className={`hidden lg:flex w-64 border-r flex-col shrink-0 h-screen sticky top-0 transition-colors ${
+      <aside className={`hidden lg:flex w-64 min-w-[16rem] max-w-[16rem] border-r flex-col shrink-0 h-full select-none z-30 transition-colors ${
         isDark 
           ? 'bg-neutral-900 border-neutral-800 text-neutral-200' 
           : 'bg-white border-slate-200 text-slate-700'
@@ -224,8 +224,8 @@ export function Sidebar({
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 w-72 max-w-[85vw] z-50 flex flex-col border-r shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
-        isMobileOpen ? 'translate-x-0' : '-translate-x-full'
+      <aside className={`fixed inset-y-0 left-0 w-72 max-w-[85vw] z-50 flex flex-col border-r shadow-2xl transition-all duration-300 ease-in-out lg:hidden ${
+        isMobileOpen ? 'translate-x-0 opacity-100 pointer-events-auto' : '-translate-x-full opacity-0 pointer-events-none invisible'
       } ${
         isDark 
           ? 'bg-neutral-900 border-neutral-800 text-neutral-200' 

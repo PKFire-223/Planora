@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Course, Task, Goal, ErrorReport, ActiveTab, TimetableEntry, Note } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
-import { FALLBACK_TIMETABLE } from '../../data/fallbackData';
 
 interface DashboardViewProps {
   courses: Course[];
@@ -43,11 +42,14 @@ export function DashboardView({
   const scheduledItems: TimetableEntry[] = (() => {
     try {
       const saved = localStorage.getItem('planora_timetable');
-      const items: TimetableEntry[] = saved ? JSON.parse(saved) : FALLBACK_TIMETABLE;
-      return items.filter(i => Boolean(i.day && i.session));
+      if (saved) {
+        const items: TimetableEntry[] = JSON.parse(saved);
+        return items.filter(i => Boolean(i.day && i.session));
+      }
     } catch {
-      return FALLBACK_TIMETABLE.filter(i => Boolean(i.day && i.session));
+      // fallback
     }
+    return [];
   })();
 
   const pendingTasks = tasks.filter(t => t.status !== 'done');

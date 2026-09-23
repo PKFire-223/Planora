@@ -20,7 +20,6 @@ import { ToastContainer } from './components/common/ToastContainer';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { api } from './services/api';
 import { Course, Task, Note, Goal, ErrorReport, ActiveTab, NotificationItem, TimetableEntry } from './types';
-import { FALLBACK_NOTIFICATIONS } from './data/fallbackData';
 import { useTheme } from './context/ThemeContext';
 import { useAuth } from './context/AuthContext';
 
@@ -42,9 +41,9 @@ function PlanoraWorkspace() {
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => {
     try {
       const saved = localStorage.getItem('planora_notifications');
-      return saved ? JSON.parse(saved) : FALLBACK_NOTIFICATIONS;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return FALLBACK_NOTIFICATIONS;
+      return [];
     }
   });
   const [crossContext, setCrossContext] = useState<{
@@ -675,7 +674,7 @@ function PlanoraWorkspace() {
   return (
     <>
       <ToastContainer onNavigate={handleToastNavigate} />
-      <div className={`min-h-screen flex flex-row transition-colors duration-200 overflow-x-hidden ${
+      <div className={`h-screen w-full flex flex-row overflow-hidden transition-colors duration-200 ${
         isDark ? 'bg-neutral-950 text-neutral-100' : 'bg-slate-50 text-slate-900'
       }`}>
         {/* Responsive Sidebar (Desktop persistent + Mobile slide-over drawer) */}
@@ -695,7 +694,7 @@ function PlanoraWorkspace() {
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 w-full overflow-x-hidden">
+        <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden relative">
           <Header
             activeTab={activeTab}
             onOpenAi={() => setActiveTab('ai')}
@@ -712,7 +711,7 @@ function PlanoraWorkspace() {
             onToggleMobileMenu={() => setIsMobileMenuOpen(prev => !prev)}
           />
 
-          <main className="flex-1 p-3 sm:p-5 md:p-6 pb-36 sm:pb-40 lg:pb-12 max-w-7xl w-full mx-auto overflow-y-auto min-w-0">
+          <main className="flex-1 p-3 sm:p-5 md:p-6 pb-28 sm:pb-32 lg:pb-12 max-w-7xl w-full mx-auto overflow-y-auto min-w-0">
             {loading ? (
               <div className={`flex items-center justify-center h-64 text-xs font-medium ${
                 isDark ? 'text-neutral-400' : 'text-slate-500'

@@ -1,18 +1,11 @@
 import { Course, Task, Note, Goal, ErrorReport, User, FileAttachment } from '../types';
-import {
-  FALLBACK_COURSES,
-  FALLBACK_TASKS,
-  FALLBACK_NOTES,
-  FALLBACK_GOALS,
-  FALLBACK_ERRORS
-} from '../data/fallbackData';
 
-// Local resilient caches for seamless offline fallback
-let localCourses = [...FALLBACK_COURSES];
-let localTasks = [...FALLBACK_TASKS];
-let localNotes = [...FALLBACK_NOTES];
-let localGoals = [...FALLBACK_GOALS];
-let localErrors = [...FALLBACK_ERRORS];
+// Local resilient in-memory caches for seamless offline fallback
+let localCourses: Course[] = [];
+let localTasks: Task[] = [];
+let localNotes: Note[] = [];
+let localGoals: Goal[] = [];
+let localErrors: ErrorReport[] = [];
 
 let localUser: User | null = null;
 

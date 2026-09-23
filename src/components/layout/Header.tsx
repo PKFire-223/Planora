@@ -43,7 +43,7 @@ export function Header({
   };
 
   return (
-    <header className={`h-16 border-b px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 backdrop-blur-md transition-colors ${
+    <header className={`h-16 shrink-0 border-b px-3 sm:px-6 flex items-center justify-between z-20 backdrop-blur-md transition-colors ${
       isDark 
         ? 'bg-neutral-950/80 border-neutral-800 text-neutral-100' 
         : 'bg-white/85 border-slate-200 text-slate-900 shadow-xs'

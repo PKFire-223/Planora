@@ -1,7 +1,10 @@
 import { Router, Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { memoryStore } from '../../config/db';
 import { MongoBackupSnapshot } from './sync.model';
-import mongoose from 'mongoose';
+import { CourseModel } from '../../models/course.model';
+import { TaskModel } from '../../models/task.model';
+import { GoalModel } from '../../models/goal.model';
 
 export const syncRouter = Router();
 
@@ -31,6 +34,7 @@ syncRouter.post('/auto-save', async (req: Request, res: Response) => {
     // 2. Persist to MongoDB if connected
     if (mongoose.connection.readyState === 1) {
       try {
+        // Create backup snapshot
         const doc = await MongoBackupSnapshot.create({
           snapshotId: backupRecordId,
           timestamp: new Date(),
@@ -46,8 +50,25 @@ syncRouter.post('/auto-save', async (req: Request, res: Response) => {
         });
         mongoSaved = true;
         backupRecordId = doc._id.toString();
-      } catch (mErr) {
-        console.warn('[Sync] MongoDB persist warning:', mErr);
+
+        // Also upsert individual documents for collection-level persistence
+        if (Array.isArray(courses)) {
+          for (const c of courses) {
+            await CourseModel.findOneAndUpdate({ id: c.id }, c, { upsert: true });
+          }
+        }
+        if (Array.isArray(tasks)) {
+          for (const t of tasks) {
+            await TaskModel.findOneAndUpdate({ id: t.id }, t, { upsert: true });
+          }
+        }
+        if (Array.isArray(goals)) {
+          for (const g of goals) {
+            await GoalModel.findOneAndUpdate({ id: g.id }, g, { upsert: true });
+          }
+        }
+      } catch (mErr: any) {
+        console.warn('[Sync] MongoDB persist warning:', mErr?.message || mErr);
       }
     }
 

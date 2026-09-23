@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import { TimetableEntry, DayOfWeek, DaySession } from '../../types';
 import { useTheme } from '../../context/ThemeContext';
-import { FALLBACK_TIMETABLE } from '../../data/fallbackData';
 
 interface TimetableViewProps {
   onNavigateToCourses?: () => void;
@@ -79,9 +78,9 @@ export function TimetableView({ onNavigateToCourses, onEntryChange }: TimetableV
   const [timetable, setTimetable] = useState<TimetableEntry[]>(() => {
     try {
       const saved = localStorage.getItem('planora_timetable');
-      return saved ? JSON.parse(saved) : FALLBACK_TIMETABLE;
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return FALLBACK_TIMETABLE;
+      return [];
     }
   });
 
